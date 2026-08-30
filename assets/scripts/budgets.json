@@ -1,0 +1,37 @@
+{
+  "_comment": "Per-asset gate budgets, enforced by gate.mjs. Patterns are glob-lite: '*' matches within a filename. maxExtent = largest bounding-box dimension in meters. nodeContract asserts the addressing nodes the rules engine needs.",
+  "probe.glb": {
+    "maxTris": 100,
+    "maxMaterials": 1,
+    "maxTextures": 0,
+    "maxExtent": 0.12
+  },
+  "board.glb": {
+    "maxTris": 20000,
+    "maxMaterials": 4,
+    "maxTextures": 0,
+    "maxExtent": 1.35,
+    "nodeContract": { "arms": 4 }
+  },
+  "board_6p.glb": {
+    "maxTris": 20000,
+    "maxMaterials": 4,
+    "maxTextures": 0,
+    "maxExtent": 1.7,
+    "nodeContract": { "arms": 6 }
+  },
+  "pawn.glb": {
+    "minTris": 300,
+    "maxTris": 2000,
+    "maxMaterials": 1,
+    "maxTextures": 0,
+    "maxExtent": 0.06
+  },
+  "cowrie_*.glb": {
+    "minTris": 1000,
+    "maxTris": 3000,
+    "maxMaterials": 2,
+    "maxTextures": 0,
+    "maxExtent": 0.035
+  }
+}
