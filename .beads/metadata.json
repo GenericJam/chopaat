@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "chopaat",
+  "project_id": "e3bae2ab-63e5-45d5-9a71-5389537091bf"
+}
