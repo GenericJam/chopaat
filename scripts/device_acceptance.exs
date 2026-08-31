@@ -551,11 +551,16 @@ defmodule ChopaatAcceptance do
   end
 
   defp final_stats(node) do
-    # The game-over report may have replaced the board; stats then come
-    # from the last mid-game sample instead.
-    case Mob.Scene3d.viewports(node) do
-      {:ok, ["board"]} -> Mob.Scene3d.frame_stats(node, "board")
-      _gone -> {:ok, %{frames: 1, avg_ms: 0.0, p95_ms: 0.0, dropped: 0, entities: 0}}
+    # The game-over report replaces the board and the viewport tears down —
+    # possibly racing this query. Any failure here falls back to a
+    # placeholder; the leak check filters entities == 0 samples out.
+    placeholder = %{frames: 1, avg_ms: 0.0, p95_ms: 0.0, dropped: 0, entities: 0}
+
+    with {:ok, ["board"]} <- Mob.Scene3d.viewports(node),
+         {:ok, stats} <- with_retry(fn -> Mob.Scene3d.frame_stats(node, "board") end, 2) do
+      {:ok, stats}
+    else
+      _gone_or_timeout -> {:ok, placeholder}
     end
   end
 

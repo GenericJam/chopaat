@@ -1,0 +1,848 @@
+OK   connect to chopaat_buildpool1@127.0.0.1
+screen: Chopaat.Screens.GameScreen
+frame_stats at start: %{
+  dropped: 40,
+  entities: 27,
+  frames: 55,
+  avg_ms: 135,
+  p95_ms: 966.667,
+  renderables: 26
+}
+OK   ray pick resolves a pawn ({230, 105, "pawn_2_1"})
+OK   settle verdicts clean after throw #1 (%{error: 0, ok: 1, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 1, mismatch: 0, skipped: 0}, throws 1)
+OK   settle verdicts clean after throw #2 (%{error: 0, ok: 2, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 2, mismatch: 0, skipped: 0}, throws 2)
+OK   settle verdicts clean after throw #3 (%{error: 0, ok: 3, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 3, mismatch: 0, skipped: 0}, throws 3)
+OK   settle verdicts clean after throw #4 (%{error: 0, ok: 4, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 4, mismatch: 0, skipped: 0}, throws 4)
+OK   settle verdicts clean after throw #5 (%{error: 0, ok: 5, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 5, mismatch: 0, skipped: 0}, throws 5)
+OK   settle verdicts clean after throw #6 (%{error: 0, ok: 6, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 6, mismatch: 0, skipped: 0}, throws 6)
+OK   settle verdicts clean after throw #7 (%{error: 0, ok: 7, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 7, mismatch: 0, skipped: 0}, throws 7)
+OK   settle verdicts clean after throw #8 (%{error: 0, ok: 8, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 8, mismatch: 0, skipped: 0}, throws 8)
+OK   settle verdicts clean after throw #9 (%{error: 0, ok: 9, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 9, mismatch: 0, skipped: 0}, throws 9)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_1_0 at {0.10000000149011612, 0.010999999940395355, 0} ≈ engine pose {0.10000000149011612, 0.010999999940395355, 0.0}
+OK   pawn_1_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_1_0 at {-0.05000000074505806, 0.010999999940395355, -0.44999998807907104} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, -0.44999998807907104}
+OK   pawn_1_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_1_0 at {-0.4000000059604645, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {-0.4000000059604645, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_1_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #10 (%{error: 0, ok: 10, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 10, mismatch: 0, skipped: 0}, throws 10)
+OK   settle verdicts clean after throw #11 (%{error: 0, ok: 11, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 11, mismatch: 0, skipped: 0}, throws 11)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_2_0 at {0, 0.010999999940395355, -0.10000000149011612} ≈ engine pose {0.0, 0.010999999940395355, -0.10000000149011612}
+OK   pawn_2_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #12 (%{error: 0, ok: 12, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 12, mismatch: 0, skipped: 0}, throws 12)
+OK   settle verdicts clean after throw #13 (%{error: 0, ok: 13, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 13, mismatch: 0, skipped: 0}, throws 13)
+OK   settle verdicts clean after throw #14 (%{error: 0, ok: 14, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 14, mismatch: 0, skipped: 0}, throws 14)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #15 (%{error: 0, ok: 15, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 15, mismatch: 0, skipped: 0}, throws 15)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #16 (%{error: 0, ok: 16, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 16, mismatch: 0, skipped: 0}, throws 16)
+OK   settle verdicts clean after throw #17 (%{error: 0, ok: 17, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 17, mismatch: 0, skipped: 0}, throws 17)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_3_0 at {-0.10000000149011612, 0.010999999940395355, 0} ≈ engine pose {-0.10000000149011612, 0.010999999940395355, 0.0}
+OK   pawn_3_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #18 (%{error: 0, ok: 18, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 18, mismatch: 0, skipped: 0}, throws 18)
+OK   settle verdicts clean after throw #19 (%{error: 0, ok: 19, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 19, mismatch: 0, skipped: 0}, throws 19)
+OK   settle verdicts clean after throw #20 (%{error: 0, ok: 20, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 20, mismatch: 0, skipped: 0}, throws 20)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_1_0 at {-0.05000000074505806, 0.010999999940395355, 0.20000000298023224} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, 0.20000000298023224}
+OK   pawn_1_0 upright outside the stretch
+OK   settle verdicts clean after throw #21 (%{error: 0, ok: 21, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 21, mismatch: 0, skipped: 0}, throws 21)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #22 (%{error: 0, ok: 22, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 22, mismatch: 0, skipped: 0}, throws 22)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #23 (%{error: 0, ok: 23, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 23, mismatch: 0, skipped: 0}, throws 23)
+OK   settle verdicts clean after throw #24 (%{error: 0, ok: 24, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 24, mismatch: 0, skipped: 0}, throws 24)
+OK   settle verdicts clean after throw #25 (%{error: 0, ok: 25, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 25, mismatch: 0, skipped: 0}, throws 25)
+OK   settle verdicts clean after throw #26 (%{error: 0, ok: 26, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 26, mismatch: 0, skipped: 0}, throws 26)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_0_0 at {0, 0.010999999940395355, 0.10000000149011612} ≈ engine pose {0.0, 0.010999999940395355, 0.10000000149011612}
+OK   pawn_0_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_0_0 at {0.05000000074505806, 0.010999999940395355, 0.30000001192092896} ≈ engine pose {0.05000000074505806, 0.010999999940395355, 0.30000001192092896}
+OK   pawn_0_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_0_0 at {0.05000000074505806, 0.010999999940395355, -0.25} ≈ engine pose {0.05000000074505806, 0.010999999940395355, -0.25}
+OK   pawn_0_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #27 (%{error: 0, ok: 27, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 27, mismatch: 0, skipped: 0}, throws 27)
+OK   settle verdicts clean after throw #28 (%{error: 0, ok: 28, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 28, mismatch: 0, skipped: 0}, throws 28)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_1_1 at {0.10000000149011612, 0.010999999940395355, 0} ≈ engine pose {0.10000000149011612, 0.010999999940395355, 0.0}
+OK   pawn_1_1 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #29 (%{error: 0, ok: 29, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 29, mismatch: 0, skipped: 0}, throws 29)
+OK   settle verdicts clean after throw #30 (%{error: 0, ok: 30, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 30, mismatch: 0, skipped: 0}, throws 30)
+OK   settle verdicts clean after throw #31 (%{error: 0, ok: 31, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 31, mismatch: 0, skipped: 0}, throws 31)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_2_0 at {-0.05000000074505806, 0.010999999940395355, 0.44999998807907104} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, 0.44999998807907104}
+OK   pawn_2_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_2_0 at {0.15000000596046448, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {0.15000000596046448, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_2_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #32 (%{error: 0, ok: 32, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 32, mismatch: 0, skipped: 0}, throws 32)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #33 (%{error: 0, ok: 33, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 33, mismatch: 0, skipped: 0}, throws 33)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #34 (%{error: 0, ok: 34, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 34, mismatch: 0, skipped: 0}, throws 34)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #35 (%{error: 0, ok: 35, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 35, mismatch: 0, skipped: 0}, throws 35)
+OK   settle verdicts clean after throw #36 (%{error: 0, ok: 36, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 36, mismatch: 0, skipped: 0}, throws 36)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #37 (%{error: 0, ok: 37, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 37, mismatch: 0, skipped: 0}, throws 37)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #38 (%{error: 0, ok: 38, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 38, mismatch: 0, skipped: 0}, throws 38)
+OK   settle verdicts clean after throw #39 (%{error: 0, ok: 39, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 39, mismatch: 0, skipped: 0}, throws 39)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_1_1 at {0.15000000596046448, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {0.15000000596046448, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_1_1 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #40 (%{error: 0, ok: 40, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 40, mismatch: 0, skipped: 0}, throws 40)
+OK   settle verdicts clean after throw #41 (%{error: 0, ok: 41, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 41, mismatch: 0, skipped: 0}, throws 41)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #42 (%{error: 0, ok: 42, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 42, mismatch: 0, skipped: 0}, throws 42)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #43 (%{error: 0, ok: 43, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 43, mismatch: 0, skipped: 0}, throws 43)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #44 (%{error: 0, ok: 44, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 44, mismatch: 0, skipped: 0}, throws 44)
+OK   settle verdicts clean after throw #45 (%{error: 0, ok: 45, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 45, mismatch: 0, skipped: 0}, throws 45)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_2_1 at {0, 0.010999999940395355, -0.10000000149011612} ≈ engine pose {0.0, 0.010999999940395355, -0.10000000149011612}
+OK   pawn_2_1 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #46 (%{error: 0, ok: 46, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 46, mismatch: 0, skipped: 0}, throws 46)
+OK   settle verdicts clean after throw #47 (%{error: 0, ok: 47, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 47, mismatch: 0, skipped: 0}, throws 47)
+OK   settle verdicts clean after throw #48 (%{error: 0, ok: 48, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 48, mismatch: 0, skipped: 0}, throws 48)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_3_0 at {0.3499999940395355, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {0.3499999940395355, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_3_0 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_3_1 at {-0.10000000149011612, 0.010999999940395355, 0} ≈ engine pose {-0.10000000149011612, 0.010999999940395355, 0.0}
+OK   pawn_3_1 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #49 (%{error: 0, ok: 49, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 49, mismatch: 0, skipped: 0}, throws 49)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #50 (%{error: 0, ok: 50, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 50, mismatch: 0, skipped: 0}, throws 50)
+OK   settle verdicts clean after throw #51 (%{error: 0, ok: 51, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 51, mismatch: 0, skipped: 0}, throws 51)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_1_1 at {-0.04399999976158142, 0.010999999940395355, 0.20000000298023224} ≈ engine pose {-0.04400000074505806, 0.010999999940395355, 0.20000000298023224}
+OK   pawn_1_1 upright outside the stretch
+OK   settle verdicts clean after throw #52 (%{error: 0, ok: 52, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 52, mismatch: 0, skipped: 0}, throws 52)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #53 (%{error: 0, ok: 53, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 53, mismatch: 0, skipped: 0}, throws 53)
+OK   settle verdicts clean after throw #54 (%{error: 0, ok: 54, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 54, mismatch: 0, skipped: 0}, throws 54)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_3_1 at {-0.30000001192092896, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {-0.30000001192092896, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_3_1 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #55 (%{error: 0, ok: 55, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 55, mismatch: 0, skipped: 0}, throws 55)
+OK   settle verdicts clean after throw #56 (%{error: 0, ok: 56, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 56, mismatch: 0, skipped: 0}, throws 56)
+turn 38: capture predicted — recording this turn cycle
+OK   settle verdicts clean after throw #57 (%{error: 0, ok: 57, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 57, mismatch: 0, skipped: 0}, throws 57)
+OK   settle verdicts clean after throw #58 (%{error: 0, ok: 58, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 58, mismatch: 0, skipped: 0}, throws 58)
+OK   settle verdicts clean after throw #59 (%{error: 0, ok: 59, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 59, mismatch: 0, skipped: 0}, throws 59)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_1_2 at {0.10000000149011612, 0.010999999940395355, 0} ≈ engine pose {0.10000000149011612, 0.010999999940395355, 0.0}
+OK   pawn_1_2 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_1_2 at {-0.05000000074505806, 0.010999999940395355, -0.44999998807907104} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, -0.44999998807907104}
+OK   pawn_1_2 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_1_0 at {-0.05000000074505806, 0.010999999940395355, 0.4000000059604645} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, 0.4000000059604645}
+OK   pawn_1_0 upright outside the stretch
+/data/local/tmp/chopaat_turn.mp4: 1 file pulled, 0 skipped. 57.5 MB/s (1493839 bytes in 0.025s)
+recorded turn cycle → evidence/android_emu_turn_cycle.mp4
+OK   settle verdicts clean after throw #60 (%{error: 0, ok: 60, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 60, mismatch: 0, skipped: 0}, throws 60)
+OK   settle verdicts clean after throw #61 (%{error: 0, ok: 61, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 61, mismatch: 0, skipped: 0}, throws 61)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_1_0 at {0.25, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {0.25, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_1_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #62 (%{error: 0, ok: 62, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 62, mismatch: 0, skipped: 0}, throws 62)
+OK   settle verdicts clean after throw #63 (%{error: 0, ok: 63, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 63, mismatch: 0, skipped: 0}, throws 63)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #64 (%{error: 0, ok: 64, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 64, mismatch: 0, skipped: 0}, throws 64)
+OK   settle verdicts clean after throw #65 (%{error: 0, ok: 65, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 65, mismatch: 0, skipped: 0}, throws 65)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_0_1 at {0, 0.010999999940395355, 0.10000000149011612} ≈ engine pose {0.0, 0.010999999940395355, 0.10000000149011612}
+OK   pawn_0_1 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #66 (%{error: 0, ok: 66, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 66, mismatch: 0, skipped: 0}, throws 66)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #67 (%{error: 0, ok: 67, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 67, mismatch: 0, skipped: 0}, throws 67)
+OK   settle verdicts clean after throw #68 (%{error: 0, ok: 68, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 68, mismatch: 0, skipped: 0}, throws 68)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_2_1 at {0, 0.010999999940395355, -0.10000000149011612} ≈ engine pose {0.0, 0.010999999940395355, -0.10000000149011612}
+OK   pawn_2_1 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #69 (%{error: 0, ok: 69, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 69, mismatch: 0, skipped: 0}, throws 69)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #70 (%{error: 0, ok: 70, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 70, mismatch: 0, skipped: 0}, throws 70)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #71 (%{error: 0, ok: 71, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 71, mismatch: 0, skipped: 0}, throws 71)
+OK   settle verdicts clean after throw #72 (%{error: 0, ok: 72, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 72, mismatch: 0, skipped: 0}, throws 72)
+OK   settle verdicts clean after throw #73 (%{error: 0, ok: 73, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 73, mismatch: 0, skipped: 0}, throws 73)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_1_1 at {0.3499999940395355, 0.02199999988079071, 0} ≈ engine pose {0.3499999940395355, 0.021999999940395355, 0.0}
+OK   pawn_1_1 tipped in final stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_1_2 at {-0.05000000074505806, 0.010999999940395355, 0.10000000149011612} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, 0.10000000149011612}
+OK   pawn_1_2 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #74 (%{error: 0, ok: 74, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 74, mismatch: 0, skipped: 0}, throws 74)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #75 (%{error: 0, ok: 75, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 75, mismatch: 0, skipped: 0}, throws 75)
+OK   settle verdicts clean after throw #76 (%{error: 0, ok: 76, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 76, mismatch: 0, skipped: 0}, throws 76)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_3_1 at {0.05000000074505806, 0.010999999940395355, 0.4000000059604645} ≈ engine pose {0.05000000074505806, 0.010999999940395355, 0.4000000059604645}
+OK   pawn_3_1 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #77 (%{error: 0, ok: 77, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 77, mismatch: 0, skipped: 0}, throws 77)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #78 (%{error: 0, ok: 78, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 78, mismatch: 0, skipped: 0}, throws 78)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #79 (%{error: 0, ok: 79, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 79, mismatch: 0, skipped: 0}, throws 79)
+OK   settle verdicts clean after throw #80 (%{error: 0, ok: 80, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 80, mismatch: 0, skipped: 0}, throws 80)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_2_1 at {-0.15000000596046448, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {-0.15000000596046448, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_2_1 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_2_1 at {-0.05000000074505806, 0.010999999940395355, 0.10000000149011612} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, 0.10000000149011612}
+OK   pawn_2_1 upright outside the stretch
+OK   settle verdicts clean after throw #81 (%{error: 0, ok: 81, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 81, mismatch: 0, skipped: 0}, throws 81)
+OK   settle verdicts clean after throw #82 (%{error: 0, ok: 82, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 82, mismatch: 0, skipped: 0}, throws 82)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_2_1 at {0.25, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {0.25, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_2_1 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #83 (%{error: 0, ok: 83, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 83, mismatch: 0, skipped: 0}, throws 83)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #84 (%{error: 0, ok: 84, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 84, mismatch: 0, skipped: 0}, throws 84)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #85 (%{error: 0, ok: 85, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 85, mismatch: 0, skipped: 0}, throws 85)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #86 (%{error: 0, ok: 86, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 86, mismatch: 0, skipped: 0}, throws 86)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #87 (%{error: 0, ok: 87, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 87, mismatch: 0, skipped: 0}, throws 87)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #88 (%{error: 0, ok: 88, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 88, mismatch: 0, skipped: 0}, throws 88)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #89 (%{error: 0, ok: 89, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 89, mismatch: 0, skipped: 0}, throws 89)
+OK   settle verdicts clean after throw #90 (%{error: 0, ok: 90, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 90, mismatch: 0, skipped: 0}, throws 90)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_1_2 at {0.10599999874830246, 0.010999999940395355, 0} ≈ engine pose {0.10600000149011612, 0.010999999940395355, 0.0}
+OK   pawn_1_2 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #91 (%{error: 0, ok: 91, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 91, mismatch: 0, skipped: 0}, throws 91)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #92 (%{error: 0, ok: 92, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 92, mismatch: 0, skipped: 0}, throws 92)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #93 (%{error: 0, ok: 93, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 93, mismatch: 0, skipped: 0}, throws 93)
+OK   settle verdicts clean after throw #94 (%{error: 0, ok: 94, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 94, mismatch: 0, skipped: 0}, throws 94)
+OK   settle verdicts clean after throw #95 (%{error: 0, ok: 95, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 95, mismatch: 0, skipped: 0}, throws 95)
+OK   settle verdicts clean after throw #96 (%{error: 0, ok: 96, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 96, mismatch: 0, skipped: 0}, throws 96)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_0_1 at {-0.05000000074505806, 0.010999999940395355, -0.25} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, -0.25}
+OK   pawn_0_1 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_0_2 at {0, 0.010999999940395355, 0.10000000149011612} ≈ engine pose {0.0, 0.010999999940395355, 0.10000000149011612}
+OK   pawn_0_2 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_0_2 at {0.44999998807907104, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {0.44999998807907104, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_0_2 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #97 (%{error: 0, ok: 97, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 97, mismatch: 0, skipped: 0}, throws 97)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #98 (%{error: 0, ok: 98, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 98, mismatch: 0, skipped: 0}, throws 98)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #99 (%{error: 0, ok: 99, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 99, mismatch: 0, skipped: 0}, throws 99)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #100 (%{error: 0, ok: 100, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 100, mismatch: 0, skipped: 0}, throws 100)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #101 (%{error: 0, ok: 101, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 101, mismatch: 0, skipped: 0}, throws 101)
+OK   settle verdicts clean after throw #102 (%{error: 0, ok: 102, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 102, mismatch: 0, skipped: 0}, throws 102)
+OK   settle verdicts clean after throw #103 (%{error: 0, ok: 103, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 103, mismatch: 0, skipped: 0}, throws 103)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_1_2 at {-0.05000000074505806, 0.010999999940395355, -0.10000000149011612} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, -0.10000000149011612}
+OK   pawn_1_2 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_1_2 at {-0.05000000074505806, 0.010999999940395355, 0.44999998807907104} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, 0.44999998807907104}
+OK   pawn_1_2 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #104 (%{error: 0, ok: 104, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 104, mismatch: 0, skipped: 0}, throws 104)
+OK   settle verdicts clean after throw #105 (%{error: 0, ok: 105, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 105, mismatch: 0, skipped: 0}, throws 105)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_2_2 at {0, 0.010999999940395355, -0.10000000149011612} ≈ engine pose {0.0, 0.010999999940395355, -0.10000000149011612}
+OK   pawn_2_2 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #106 (%{error: 0, ok: 106, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 106, mismatch: 0, skipped: 0}, throws 106)
+OK   settle verdicts clean after throw #107 (%{error: 0, ok: 107, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 107, mismatch: 0, skipped: 0}, throws 107)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_3_2 at {-0.10000000149011612, 0.010999999940395355, 0} ≈ engine pose {-0.10000000149011612, 0.010999999940395355, 0.0}
+OK   pawn_3_2 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_3_1 at {0.44999998807907104, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {0.44999998807907104, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_3_1 upright outside the stretch
+OK   settle verdicts clean after throw #108 (%{error: 0, ok: 108, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 108, mismatch: 0, skipped: 0}, throws 108)
+OK   settle verdicts clean after throw #109 (%{error: 0, ok: 109, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 109, mismatch: 0, skipped: 0}, throws 109)
+OK   settle verdicts clean after throw #110 (%{error: 0, ok: 110, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 110, mismatch: 0, skipped: 0}, throws 110)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_3_0 at {-0.10000000149011612, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {-0.10000000149011612, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_3_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_3_0 at {-0.30000001192092896, 0.02199999988079071, 0} ≈ engine pose {-0.30000001192092896, 0.021999999940395355, 0.0}
+OK   pawn_3_0 tipped in final stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #111 (%{error: 0, ok: 111, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 111, mismatch: 0, skipped: 0}, throws 111)
+OK   settle verdicts clean after throw #112 (%{error: 0, ok: 112, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 112, mismatch: 0, skipped: 0}, throws 112)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #113 (%{error: 0, ok: 113, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 113, mismatch: 0, skipped: 0}, throws 113)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #114 (%{error: 0, ok: 114, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 114, mismatch: 0, skipped: 0}, throws 114)
+OK   settle verdicts clean after throw #115 (%{error: 0, ok: 115, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 115, mismatch: 0, skipped: 0}, throws 115)
+OK   target marker target_assign_0_1 present and pickable
+OK   move readback: pawn_3_1 at {0.05000000074505806, 0.010999999940395355, -0.25} ≈ engine pose {0.05000000074505806, 0.010999999940395355, -0.25}
+OK   pawn_3_1 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #116 (%{error: 0, ok: 116, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 116, mismatch: 0, skipped: 0}, throws 116)
+OK   settle verdicts clean after throw #117 (%{error: 0, ok: 117, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 117, mismatch: 0, skipped: 0}, throws 117)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_0_2 at {0, 0.010999999940395355, 0.10000000149011612} ≈ engine pose {0.0, 0.010999999940395355, 0.10000000149011612}
+OK   pawn_0_2 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #118 (%{error: 0, ok: 118, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 118, mismatch: 0, skipped: 0}, throws 118)
+OK   settle verdicts clean after throw #119 (%{error: 0, ok: 119, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 119, mismatch: 0, skipped: 0}, throws 119)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_1_3 at {0.10599999874830246, 0.010999999940395355, 0} ≈ engine pose {0.10600000149011612, 0.010999999940395355, 0.0}
+OK   pawn_1_3 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #120 (%{error: 0, ok: 120, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 120, mismatch: 0, skipped: 0}, throws 120)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #121 (%{error: 0, ok: 121, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 121, mismatch: 0, skipped: 0}, throws 121)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #122 (%{error: 0, ok: 122, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 122, mismatch: 0, skipped: 0}, throws 122)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #123 (%{error: 0, ok: 123, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 123, mismatch: 0, skipped: 0}, throws 123)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #124 (%{error: 0, ok: 124, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 124, mismatch: 0, skipped: 0}, throws 124)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #125 (%{error: 0, ok: 125, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 125, mismatch: 0, skipped: 0}, throws 125)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #126 (%{error: 0, ok: 126, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 126, mismatch: 0, skipped: 0}, throws 126)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #127 (%{error: 0, ok: 127, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 127, mismatch: 0, skipped: 0}, throws 127)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #128 (%{error: 0, ok: 128, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 128, mismatch: 0, skipped: 0}, throws 128)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #129 (%{error: 0, ok: 129, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 129, mismatch: 0, skipped: 0}, throws 129)
+OK   settle verdicts clean after throw #130 (%{error: 0, ok: 130, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 130, mismatch: 0, skipped: 0}, throws 130)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_3_2 at {0.05000000074505806, 0.010999999940395355, 0.44999998807907104} ≈ engine pose {0.05000000074505806, 0.010999999940395355, 0.44999998807907104}
+OK   pawn_3_2 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #131 (%{error: 0, ok: 131, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 131, mismatch: 0, skipped: 0}, throws 131)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #132 (%{error: 0, ok: 132, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 132, mismatch: 0, skipped: 0}, throws 132)
+OK   settle verdicts clean after throw #133 (%{error: 0, ok: 133, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 133, mismatch: 0, skipped: 0}, throws 133)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_1_2 at {0.20000000298023224, 0.02199999988079071, 0} ≈ engine pose {0.20000000298023224, 0.021999999940395355, 0.0}
+OK   pawn_1_2 tipped in final stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_1_2 at {0.10000000149011612, 0.02199999988079071, 0} ≈ engine pose {0.10000000149011612, 0.021999999940395355, 0.0}
+OK   pawn_1_2 tipped in final stretch
+OK   target marker target_bonus_0 present and pickable
+OK   settle verdicts clean after throw #134 (%{error: 0, ok: 134, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 134, mismatch: 0, skipped: 0}, throws 134)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #135 (%{error: 0, ok: 135, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 135, mismatch: 0, skipped: 0}, throws 135)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #136 (%{error: 0, ok: 136, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 136, mismatch: 0, skipped: 0}, throws 136)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #137 (%{error: 0, ok: 137, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 137, mismatch: 0, skipped: 0}, throws 137)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #138 (%{error: 0, ok: 138, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 138, mismatch: 0, skipped: 0}, throws 138)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #139 (%{error: 0, ok: 139, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 139, mismatch: 0, skipped: 0}, throws 139)
+OK   settle verdicts clean after throw #140 (%{error: 0, ok: 140, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 140, mismatch: 0, skipped: 0}, throws 140)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_3_2 at {0.05000000074505806, 0.010999999940395355, -0.10000000149011612} ≈ engine pose {0.05000000074505806, 0.010999999940395355, -0.10000000149011612}
+OK   pawn_3_2 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #141 (%{error: 0, ok: 141, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 141, mismatch: 0, skipped: 0}, throws 141)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #142 (%{error: 0, ok: 142, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 142, mismatch: 0, skipped: 0}, throws 142)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #143 (%{error: 0, ok: 143, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 143, mismatch: 0, skipped: 0}, throws 143)
+OK   settle verdicts clean after throw #144 (%{error: 0, ok: 144, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 144, mismatch: 0, skipped: 0}, throws 144)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_2_2 at {-0.20000000298023224, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {-0.20000000298023224, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_2_2 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #145 (%{error: 0, ok: 145, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 145, mismatch: 0, skipped: 0}, throws 145)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #146 (%{error: 0, ok: 146, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 146, mismatch: 0, skipped: 0}, throws 146)
+OK   settle verdicts clean after throw #147 (%{error: 0, ok: 147, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 147, mismatch: 0, skipped: 0}, throws 147)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_0_2 at {0.05000000074505806, 0.010999999940395355, -0.44999998807907104} ≈ engine pose {0.05000000074505806, 0.010999999940395355, -0.44999998807907104}
+OK   pawn_0_2 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #148 (%{error: 0, ok: 148, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 148, mismatch: 0, skipped: 0}, throws 148)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #149 (%{error: 0, ok: 149, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 149, mismatch: 0, skipped: 0}, throws 149)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #150 (%{error: 0, ok: 150, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 150, mismatch: 0, skipped: 0}, throws 150)
+OK   settle verdicts clean after throw #151 (%{error: 0, ok: 151, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 151, mismatch: 0, skipped: 0}, throws 151)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_3_2 at {-0.30000001192092896, 0.02199999988079071, 0} ≈ engine pose {-0.30000001192092896, 0.021999999940395355, 0.0}
+OK   pawn_3_2 tipped in final stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #152 (%{error: 0, ok: 152, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 152, mismatch: 0, skipped: 0}, throws 152)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #153 (%{error: 0, ok: 153, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 153, mismatch: 0, skipped: 0}, throws 153)
+OK   settle verdicts clean after throw #154 (%{error: 0, ok: 154, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 154, mismatch: 0, skipped: 0}, throws 154)
+OK   settle verdicts clean after throw #155 (%{error: 0, ok: 155, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 155, mismatch: 0, skipped: 0}, throws 155)
+OK   target marker target_assign_1_3 present and pickable
+OK   move readback: pawn_1_3 at {-0.44999998807907104, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {-0.44999998807907104, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_1_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_1_3 at {0.10000000149011612, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {0.10000000149011612, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_1_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_1_3 at {0.25, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {0.25, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_1_3 upright outside the stretch
+OK   target marker target_bonus_2 present and pickable
+OK   move readback: pawn_1_2 at {0.03200000151991844, 0.010999999940395355, 1.9594349475926563e-18} ≈ engine pose {0.032, 0.010999999940395355, 1.959434878635765e-18}
+OK   target marker target_bonus_3 present and pickable
+OK   settle verdicts clean after throw #156 (%{error: 0, ok: 156, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 156, mismatch: 0, skipped: 0}, throws 156)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #157 (%{error: 0, ok: 157, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 157, mismatch: 0, skipped: 0}, throws 157)
+OK   settle verdicts clean after throw #158 (%{error: 0, ok: 158, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 158, mismatch: 0, skipped: 0}, throws 158)
+OK   settle verdicts clean after throw #159 (%{error: 0, ok: 159, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 159, mismatch: 0, skipped: 0}, throws 159)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_3_3 at {-0.10000000149011612, 0.010999999940395355, 0} ≈ engine pose {-0.10000000149011612, 0.010999999940395355, 0.0}
+OK   pawn_3_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_3_3 at {0.05000000074505806, 0.010999999940395355, 0.44999998807907104} ≈ engine pose {0.05000000074505806, 0.010999999940395355, 0.44999998807907104}
+OK   pawn_3_3 upright outside the stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #160 (%{error: 0, ok: 160, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 160, mismatch: 0, skipped: 0}, throws 160)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #161 (%{error: 0, ok: 161, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 161, mismatch: 0, skipped: 0}, throws 161)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #162 (%{error: 0, ok: 162, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 162, mismatch: 0, skipped: 0}, throws 162)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #163 (%{error: 0, ok: 163, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 163, mismatch: 0, skipped: 0}, throws 163)
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #164 (%{error: 0, ok: 164, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 164, mismatch: 0, skipped: 0}, throws 164)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #165 (%{error: 0, ok: 165, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 165, mismatch: 0, skipped: 0}, throws 165)
+OK   settle verdicts clean after throw #166 (%{error: 0, ok: 166, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 166, mismatch: 0, skipped: 0}, throws 166)
+OK   target marker target_khadu_0_3 present and pickable
+OK   settle verdicts clean after throw #167 (%{error: 0, ok: 167, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 167, mismatch: 0, skipped: 0}, throws 167)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #168 (%{error: 0, ok: 168, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 168, mismatch: 0, skipped: 0}, throws 168)
+OK   settle verdicts clean after throw #169 (%{error: 0, ok: 169, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 169, mismatch: 0, skipped: 0}, throws 169)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_3_3 at {0.05000000074505806, 0.010999999940395355, -0.10000000149011612} ≈ engine pose {0.05000000074505806, 0.010999999940395355, -0.10000000149011612}
+OK   pawn_3_3 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_3_2 at {-0.15000000596046448, 0.02199999988079071, 0} ≈ engine pose {-0.15000000596046448, 0.021999999940395355, 0.0}
+OK   pawn_3_2 tipped in final stretch
+OK   target marker target_bonus_1 present and pickable
+OK   settle verdicts clean after throw #170 (%{error: 0, ok: 170, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 170, mismatch: 0, skipped: 0}, throws 170)
+OK   settle verdicts clean after throw #171 (%{error: 0, ok: 171, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 171, mismatch: 0, skipped: 0}, throws 171)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_0_3 at {0, 0.010999999940395355, 0.10000000149011612} ≈ engine pose {0.0, 0.010999999940395355, 0.10000000149011612}
+OK   pawn_0_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #172 (%{error: 0, ok: 172, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 172, mismatch: 0, skipped: 0}, throws 172)
+OK   settle verdicts clean after throw #173 (%{error: 0, ok: 173, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 173, mismatch: 0, skipped: 0}, throws 173)
+OK   settle verdicts clean after throw #174 (%{error: 0, ok: 174, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 174, mismatch: 0, skipped: 0}, throws 174)
+OK   target marker target_khadu_0_3 present and pickable
+OK   move readback: pawn_1_3 at {-0.05000000074505806, 0.010999999940395355, 0.30000001192092896} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, 0.30000001192092896}
+OK   pawn_1_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #175 (%{error: 0, ok: 175, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 175, mismatch: 0, skipped: 0}, throws 175)
+OK   settle verdicts clean after throw #176 (%{error: 0, ok: 176, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 176, mismatch: 0, skipped: 0}, throws 176)
+OK   settle verdicts clean after throw #177 (%{error: 0, ok: 177, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 177, mismatch: 0, skipped: 0}, throws 177)
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_2_2 at {0.20000000298023224, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {0.20000000298023224, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_2_2 upright outside the stretch
+OK   target marker target_assign_0_2 present and pickable
+OK   move readback: pawn_2_2 at {0, 0.02199999988079071, -0.3499999940395355} ≈ engine pose {0.0, 0.021999999940395355, -0.3499999940395355}
+OK   pawn_2_2 tipped in final stretch
+OK   target marker target_assign_0_1 present and pickable
+OK   settle verdicts clean after throw #178 (%{error: 0, ok: 178, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 178, mismatch: 0, skipped: 0}, throws 178)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #179 (%{error: 0, ok: 179, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 179, mismatch: 0, skipped: 0}, throws 179)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #180 (%{error: 0, ok: 180, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 180, mismatch: 0, skipped: 0}, throws 180)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #181 (%{error: 0, ok: 181, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 181, mismatch: 0, skipped: 0}, throws 181)
+OK   settle verdicts clean after throw #182 (%{error: 0, ok: 182, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 182, mismatch: 0, skipped: 0}, throws 182)
+OK   target marker target_assign_1_2 present and pickable
+OK   move readback: pawn_2_2 at {0, 0.02199999988079071, -0.25} ≈ engine pose {0.0, 0.021999999940395355, -0.25}
+OK   pawn_2_2 tipped in final stretch
+OK   settle verdicts clean after throw #183 (%{error: 0, ok: 183, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 183, mismatch: 0, skipped: 0}, throws 183)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #184 (%{error: 0, ok: 184, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 184, mismatch: 0, skipped: 0}, throws 184)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #185 (%{error: 0, ok: 185, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 185, mismatch: 0, skipped: 0}, throws 185)
+OK   target marker target_assign_0_2 present and pickable
+OK   settle verdicts clean after throw #186 (%{error: 0, ok: 186, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 186, mismatch: 0, skipped: 0}, throws 186)
+OK   settle verdicts clean after throw #187 (%{error: 0, ok: 187, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 187, mismatch: 0, skipped: 0}, throws 187)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_3_3 at {-0.3499999940395355, 0.02199999988079071, 0} ≈ engine pose {-0.3499999940395355, 0.021999999940395355, 0.0}
+OK   pawn_3_3 tipped in final stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_3_3 at {-0.15000000596046448, 0.02199999988079071, 0} ≈ engine pose {-0.15000000596046448, 0.021999999940395355, 0.0}
+OK   pawn_3_3 tipped in final stretch
+OK   target marker target_bonus_3 present and pickable
+OK   settle verdicts clean after throw #188 (%{error: 0, ok: 188, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 188, mismatch: 0, skipped: 0}, throws 188)
+OK   settle verdicts clean after throw #189 (%{error: 0, ok: 189, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 189, mismatch: 0, skipped: 0}, throws 189)
+OK   settle verdicts clean after throw #190 (%{error: 0, ok: 190, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 190, mismatch: 0, skipped: 0}, throws 190)
+OK   settle verdicts clean after throw #191 (%{error: 0, ok: 191, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 191, mismatch: 0, skipped: 0}, throws 191)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_0_3 at {0.10000000149011612, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {0.10000000149011612, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_0_3 upright outside the stretch
+OK   target marker target_khadu_1_0 present and pickable
+OK   move readback: pawn_0_0 at {-0.05000000074505806, 0.010999999940395355, 0.44999998807907104} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, 0.44999998807907104}
+OK   pawn_0_0 upright outside the stretch
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #192 (%{error: 0, ok: 192, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 192, mismatch: 0, skipped: 0}, throws 192)
+OK   settle verdicts clean after throw #193 (%{error: 0, ok: 193, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 193, mismatch: 0, skipped: 0}, throws 193)
+OK   settle verdicts clean after throw #194 (%{error: 0, ok: 194, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 194, mismatch: 0, skipped: 0}, throws 194)
+OK   settle verdicts clean after throw #195 (%{error: 0, ok: 195, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 195, mismatch: 0, skipped: 0}, throws 195)
+OK   settle verdicts clean after throw #196 (%{error: 0, ok: 196, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 196, mismatch: 0, skipped: 0}, throws 196)
+OK   target marker target_assign_0_0 present and pickable
+OK   move readback: pawn_0_0 at {-0.05000000074505806, 0.010999999940395355, -0.44999998807907104} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, -0.44999998807907104}
+OK   pawn_0_0 upright outside the stretch
+OK   target marker target_khadu_0_0 present and pickable
+OK   settle verdicts clean after throw #197 (%{error: 0, ok: 197, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 197, mismatch: 0, skipped: 0}, throws 197)
+OK   settle verdicts clean after throw #198 (%{error: 0, ok: 198, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 198, mismatch: 0, skipped: 0}, throws 198)
+OK   settle verdicts clean after throw #199 (%{error: 0, ok: 199, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 199, mismatch: 0, skipped: 0}, throws 199)
+OK   target marker target_bonus_3 present and pickable
+OK   settle verdicts clean after throw #200 (%{error: 0, ok: 200, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 200, mismatch: 0, skipped: 0}, throws 200)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #201 (%{error: 0, ok: 201, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 201, mismatch: 0, skipped: 0}, throws 201)
+OK   settle verdicts clean after throw #202 (%{error: 0, ok: 202, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 202, mismatch: 0, skipped: 0}, throws 202)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_2_3 at {0.006000000052154064, 0.010999999940395355, -0.10000000149011612} ≈ engine pose {0.006, 0.010999999940395355, -0.10000000149011612}
+OK   pawn_2_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #203 (%{error: 0, ok: 203, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 203, mismatch: 0, skipped: 0}, throws 203)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #204 (%{error: 0, ok: 204, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 204, mismatch: 0, skipped: 0}, throws 204)
+OK   settle verdicts clean after throw #205 (%{error: 0, ok: 205, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 205, mismatch: 0, skipped: 0}, throws 205)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_2_3 at {-0.05000000074505806, 0.010999999940395355, -0.20000000298023224} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, -0.20000000298023224}
+OK   pawn_2_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_2_3 at {-0.05000000074505806, 0.010999999940395355, -0.10000000149011612} ≈ engine pose {-0.05000000074505806, 0.010999999940395355, -0.10000000149011612}
+OK   pawn_2_3 upright outside the stretch
+OK   target marker target_bonus_2 present and pickable
+OK   settle verdicts clean after throw #206 (%{error: 0, ok: 206, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 206, mismatch: 0, skipped: 0}, throws 206)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #207 (%{error: 0, ok: 207, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 207, mismatch: 0, skipped: 0}, throws 207)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_2_3 at {-0.25, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {-0.25, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_2_3 upright outside the stretch
+OK   settle verdicts clean after throw #208 (%{error: 0, ok: 208, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 208, mismatch: 0, skipped: 0}, throws 208)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #209 (%{error: 0, ok: 209, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 209, mismatch: 0, skipped: 0}, throws 209)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #210 (%{error: 0, ok: 210, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 210, mismatch: 0, skipped: 0}, throws 210)
+OK   settle verdicts clean after throw #211 (%{error: 0, ok: 211, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 211, mismatch: 0, skipped: 0}, throws 211)
+OK   settle verdicts clean after throw #212 (%{error: 0, ok: 212, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 212, mismatch: 0, skipped: 0}, throws 212)
+OK   settle verdicts clean after throw #213 (%{error: 0, ok: 213, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 213, mismatch: 0, skipped: 0}, throws 213)
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_2_3 at {-0.20000000298023224, 0.010999999940395355, 0.05000000074505806} ≈ engine pose {-0.20000000298023224, 0.010999999940395355, 0.05000000074505806}
+OK   pawn_2_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_2_3 at {0, 0.010999999940395355, 0.44999998807907104} ≈ engine pose {0.0, 0.010999999940395355, 0.44999998807907104}
+OK   pawn_2_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_2_3 at {0.10000000149011612, 0.010999999940395355, -0.05000000074505806} ≈ engine pose {0.10000000149011612, 0.010999999940395355, -0.05000000074505806}
+OK   pawn_2_3 upright outside the stretch
+OK   target marker target_assign_0_3 present and pickable
+OK   move readback: pawn_2_3 at {0.05000000074505806, 0.010999999940395355, -0.15000000596046448} ≈ engine pose {0.05000000074505806, 0.010999999940395355, -0.15000000596046448}
+OK   pawn_2_3 upright outside the stretch
+OK   target marker target_bonus_3 present and pickable
+OK   move readback: pawn_2_3 at {0.05000000074505806, 0.010999999940395355, -0.20000000298023224} ≈ engine pose {0.05000000074505806, 0.010999999940395355, -0.20000000298023224}
+OK   pawn_2_3 upright outside the stretch
+OK   target marker target_bonus_3 present and pickable
+OK   move readback: pawn_2_3 at {0.05000000074505806, 0.010999999940395355, -0.25} ≈ engine pose {0.05000000074505806, 0.010999999940395355, -0.25}
+OK   pawn_2_3 upright outside the stretch
+OK   settle verdicts clean after throw #214 (%{error: 0, ok: 214, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 214, mismatch: 0, skipped: 0}, throws 214)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #215 (%{error: 0, ok: 215, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 215, mismatch: 0, skipped: 0}, throws 215)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #216 (%{error: 0, ok: 216, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 216, mismatch: 0, skipped: 0}, throws 216)
+OK   target marker target_assign_0_3 present and pickable
+OK   settle verdicts clean after throw #217 (%{error: 0, ok: 217, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 217, mismatch: 0, skipped: 0}, throws 217)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #218 (%{error: 0, ok: 218, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 218, mismatch: 0, skipped: 0}, throws 218)
+OK   settle verdicts clean after throw #219 (%{error: 0, ok: 219, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 219, mismatch: 0, skipped: 0}, throws 219)
+OK   target marker target_assign_1_3 present and pickable
+OK   move readback: pawn_2_3 at {0, 0.02199999988079071, -0.25} ≈ engine pose {0.0, 0.021999999940395355, -0.25}
+OK   pawn_2_3 tipped in final stretch
+OK   target marker target_bonus_3 present and pickable
+OK   move readback: pawn_2_3 at {0, 0.02199999988079071, -0.20000000298023224} ≈ engine pose {0.0, 0.021999999940395355, -0.20000000298023224}
+OK   pawn_2_3 tipped in final stretch
+OK   settle verdicts clean after throw #220 (%{error: 0, ok: 220, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 220, mismatch: 0, skipped: 0}, throws 220)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #221 (%{error: 0, ok: 221, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 221, mismatch: 0, skipped: 0}, throws 221)
+OK   settle verdicts clean after throw #222 (%{error: 0, ok: 222, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 222, mismatch: 0, skipped: 0}, throws 222)
+OK   target marker target_bonus_3 present and pickable
+OK   move readback: pawn_2_3 at {0, 0.02199999988079071, -0.15000000596046448} ≈ engine pose {0.0, 0.021999999940395355, -0.15000000596046448}
+OK   pawn_2_3 tipped in final stretch
+OK   settle verdicts clean after throw #223 (%{error: 0, ok: 223, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 223, mismatch: 0, skipped: 0}, throws 223)
+OK   target marker target_assign_0_0 present and pickable
+OK   settle verdicts clean after throw #224 (%{error: 0, ok: 224, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 224, mismatch: 0, skipped: 0}, throws 224)
+OK   settle verdicts clean after throw #225 (%{error: 0, ok: 225, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 225, mismatch: 0, skipped: 0}, throws 225)
+OK   settle verdicts clean after throw #226 (%{error: 0, ok: 226, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 226, mismatch: 0, skipped: 0}, throws 226)
+OK   settle verdicts clean after throw #227 (%{error: 0, ok: 227, mismatch: 0, skipped: 0})
+OK   every throw readback-verified natively (%{error: 0, ok: 227, mismatch: 0, skipped: 0}, throws 227)
+OK   target marker target_bonus_3 present and pickable
+OK   move readback: pawn_2_3 at {0, 0.02199999988079071, -0.10000000149011612} ≈ engine pose {0.0, 0.021999999940395355, -0.10000000149011612}
+OK   pawn_2_3 tipped in final stretch
+OK   target marker target_bonus_3 present and pickable
+
+game finished: placements [1, 3, 2, 0]
+** (MatchError) no match of right hand side value:
+
+    {:error, :timeout}
+
+    scripts/device_acceptance.exs:515: ChopaatAcceptance.finish/1
+    scripts/device_acceptance.exs:572: (file)
