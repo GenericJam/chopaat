@@ -23,7 +23,8 @@ defmodule Chopaat.BoundaryTest do
   use ExUnit.Case, async: true
 
   # The game plane: the modules that must stay hostable with no renderer
-  # compiled anywhere near them (bead chopaat-uzu).
+  # compiled anywhere near them (bead chopaat-uzu; bots — pure session
+  # clients — joined at chopaat-27z).
   @game_plane [
     Chopaat.Game,
     Chopaat.Rules,
@@ -33,7 +34,12 @@ defmodule Chopaat.BoundaryTest do
     Chopaat.Pawn,
     Chopaat.RNG,
     Chopaat.Session,
-    Chopaat.Setup
+    Chopaat.Setup,
+    Chopaat.Bot,
+    Chopaat.Bot.Random,
+    Chopaat.Bot.Heuristic,
+    Chopaat.Bot.Runner,
+    Chopaat.Bot.Supervisor
   ]
 
   # Forbidden by prefix (atom text): the Mob runtime and every chopaat

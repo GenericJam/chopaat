@@ -461,4 +461,31 @@ defmodule Chopaat.SessionTest do
       assert result.cosmetic == cosmetic
     end
   end
+
+  describe "event payload hygiene" do
+    test "a khadu from x < khadu_reverse emits only real cell names (soak regression)" do
+      # Bead chopaat-27z: the reversal from x=2 passes through positions
+      # before the launch square; the moved event's path (and every
+      # position payload) must still name only cells that exist —
+      # renderers key their lookups on these strings.
+      game =
+        Craft.game()
+        |> Craft.tod(0)
+        |> Craft.pawns(0, [2, :home, :home, :home])
+        |> Craft.assigning([30, 30, 25])
+
+      session = start_session(game: game)
+      [action | _rest] = Session.legal_actions(session, 0)
+      assert {:khadu, _i, 0} = action
+
+      {:ok, events} = Session.confirm_khadu(session, 0, action)
+      {:moved, moved} = Enum.find(events, &match?({:moved, _}, &1))
+
+      assert moved.path != []
+
+      for %{cell: cell} <- [moved.from, moved.to | moved.path], cell != nil do
+        assert cell == "center_home" or cell =~ ~r/^cell_t\d+_l[012]_r[1-8]$/
+      end
+    end
+  end
 end

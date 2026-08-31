@@ -37,6 +37,23 @@ defmodule Chopaat.Screens.GameScreen do
   targets route through the confirm dialog). Committed movement actions
   play as an eased per-cell hop (`Chopaat.Scene.Move`, `{:move_tick, ref}`
   self-messages) along the `{:moved, ...}` event's path.
+
+  Bot seats (bead chopaat-27z): `params[:bots]` maps seats to
+  `Chopaat.Bot` modules; the screen starts a linked
+  `Chopaat.Bot.Supervisor` whose runners play those seats through the
+  same session API. On a bot's turn the screen is a spectator — throws,
+  tumbles and moves render exactly as for humans, the header names whose
+  turn it is (with a `bot` marker), but no throw/action buttons appear
+  and stray taps are ignored; the pass-the-device handoff is skipped when
+  the next seat is a bot. Cadence lives in the runners
+  (`:chopaat, :bot_delay_ms`, default 1600 ms — comfortably longer
+  than a tumble so a human can follow; tests pass `bot_delay_ms: 0`).
+
+  The game-over report offers a rematch (`Session.new_game/2` with
+  `reshuffle: true` — same seats, fresh cosmetic shell set) and, when bot
+  seats exist, an auto-loop toggle: with it ON every finished game
+  rematches itself after a short beat (`:chopaat, :auto_rematch_ms`) —
+  the standing soak mode from the owner directive.
   """
 
   use Mob.Screen
@@ -54,16 +71,24 @@ defmodule Chopaat.Screens.GameScreen do
 
   @viewport_id "board"
 
+  @default_bot_delay_ms 1600
+  @default_auto_rematch_ms 4000
+
   @impl Mob.Screen
   def mount(params, _session, socket) do
     session = params[:session] || start_session(params)
     :ok = Session.subscribe(session)
+    bots = params[:bots] || %{}
 
     socket =
       Mob.Socket.assign(socket,
         session: session,
         setup: Session.setup(session),
         game: Session.game(session),
+        bots: bots,
+        bot_sup: start_bots(session, bots, params),
+        auto_loop: params[:auto_loop] || false,
+        rematch_timer: nil,
         last_shells: nil,
         throw: nil,
         khadu: nil,
@@ -93,13 +118,37 @@ defmodule Chopaat.Screens.GameScreen do
     session
   end
 
+  # Bot seats play through the same session API, from supervised runner
+  # processes linked to this screen (they die with their game). Pacing is
+  # the runners' delay — the session itself never waits.
+  defp start_bots(_session, bots, _params) when map_size(bots) == 0, do: nil
+
+  defp start_bots(session, bots, params) do
+    delay =
+      params[:bot_delay_ms] ||
+        Application.get_env(:chopaat, :bot_delay_ms, @default_bot_delay_ms)
+
+    {:ok, sup} =
+      Chopaat.Bot.Supervisor.start_link(
+        session: session,
+        seats: Enum.to_list(bots),
+        delay_ms: delay
+      )
+
+    sup
+  end
+
+  defp bot_turn?(assigns), do: Map.has_key?(assigns.bots, assigns.game.turn)
+
   # ── commands ─────────────────────────────────────────────────────────────
 
   @impl Mob.Screen
   def handle_info({:tap, :throw}, socket) do
     %{game: game, throw: in_flight, handoff: handoff, move: move} = socket.assigns
 
-    case game.phase == :rolling and is_nil(in_flight) and is_nil(handoff) and is_nil(move) do
+    idle? = game.phase == :rolling and is_nil(in_flight) and is_nil(handoff) and is_nil(move)
+
+    case idle? and not bot_turn?(socket.assigns) do
       false -> {:noreply, socket}
       true -> {:noreply, command(socket, &Session.throw(&1, game.turn))}
     end
@@ -111,13 +160,19 @@ defmodule Chopaat.Screens.GameScreen do
     {:noreply, socket}
   end
 
-  def handle_info({:tap, {:action, {:khadu, _roll, _pawn} = action}}, socket) do
-    # Khadu commits are gated behind the confirm dialog naming the burn.
-    {:noreply, Mob.Socket.assign(socket, :khadu, action)}
-  end
-
   def handle_info({:tap, {:action, action}}, socket) do
-    {:noreply, command(socket, &Session.assign(&1, socket.assigns.game.turn, action))}
+    cond do
+      # A bot's turn: the screen is a spectator — stray taps are inert.
+      bot_turn?(socket.assigns) ->
+        {:noreply, socket}
+
+      # Khadu commits are gated behind the confirm dialog naming the burn.
+      match?({:khadu, _roll, _pawn}, action) ->
+        {:noreply, Mob.Socket.assign(socket, :khadu, action)}
+
+      true ->
+        {:noreply, command(socket, &Session.assign(&1, socket.assigns.game.turn, action))}
+    end
   end
 
   def handle_info({:tap, :khadu_confirm}, socket) do
@@ -172,12 +227,29 @@ defmodule Chopaat.Screens.GameScreen do
     {:noreply, Mob.Socket.pop_screen(socket)}
   end
 
+  # ── rematch / auto-loop (bead chopaat-27z) ───────────────────────────────
+
+  def handle_info({:tap, :rematch}, socket), do: {:noreply, rematch(socket)}
+
+  def handle_info({:tap, :auto_loop_toggle}, socket) do
+    {:noreply, Mob.Socket.update(socket, :auto_loop, &(not &1))}
+  end
+
+  def handle_info({:auto_rematch, timer}, socket) do
+    %{rematch_timer: current, auto_loop: loop?, game: game} = socket.assigns
+
+    case timer == current and loop? and game.phase == :finished do
+      true -> {:noreply, rematch(socket)}
+      false -> {:noreply, socket}
+    end
+  end
+
   # ── pick-to-move ─────────────────────────────────────────────────────────
 
   def handle_info({:pawn_picked, entity_id}, socket) do
     %{game: game, move: move, khadu: khadu, handoff: handoff} = socket.assigns
 
-    case is_nil(move) and is_nil(khadu) and is_nil(handoff) do
+    case is_nil(move) and is_nil(khadu) and is_nil(handoff) and not bot_turn?(socket.assigns) do
       false -> {:noreply, socket}
       true -> {:noreply, picked(socket, game, entity_id)}
     end
@@ -206,6 +278,13 @@ defmodule Chopaat.Screens.GameScreen do
   defp command(socket, command) do
     _ok_or_stale = command.(socket.assigns.session)
     socket
+  end
+
+  # Same seats, fresh game, fresh cosmetic shell set; the :game_started
+  # event resets the presented state (and wakes the bot runners).
+  defp rematch(socket) do
+    socket = Mob.Socket.assign(socket, :rematch_timer, nil)
+    command(socket, &Session.new_game(&1, reshuffle: true))
   end
 
   # ── event handling (the render plane follows the session's truth) ────────
@@ -237,6 +316,24 @@ defmodule Chopaat.Screens.GameScreen do
     |> rebuild_scene()
   end
 
+  # A rematch: fresh game (and possibly a reshuffled cosmetic shell set) —
+  # re-fetch setup, drop every in-flight performance, present the reset.
+  defp handle_event({:game_started, _started}, socket) do
+    socket
+    |> Mob.Socket.assign(
+      setup: Session.setup(socket.assigns.session),
+      last_shells: nil,
+      throw: nil,
+      khadu: nil,
+      handoff: nil,
+      deferred_handoff: nil,
+      banner: nil,
+      move: nil,
+      rematch_timer: nil
+    )
+    |> adopt()
+  end
+
   defp handle_event({:turn_passed, %{extra_turn: true}}, socket) do
     socket
     |> Mob.Socket.assign(:banner, "Extra turn — capture!")
@@ -244,24 +341,46 @@ defmodule Chopaat.Screens.GameScreen do
   end
 
   defp handle_event({:turn_passed, %{next_seat: seat, extra_turn: false}}, socket) do
-    # The handoff prompt replaces the board — while a move performance is
-    # in flight it waits for the landing (land_move/1 releases it).
-    key = if socket.assigns.move, do: :deferred_handoff, else: :handoff
+    case Map.has_key?(socket.assigns.bots, seat) do
+      # A bot needs no device: skip the pass-and-play prompt and spectate.
+      true ->
+        socket
+        |> Mob.Socket.assign(banner: nil, last_shells: nil)
+        |> adopt()
 
-    socket
-    |> Mob.Socket.assign([{key, %{player: seat}}, {:banner, nil}, {:last_shells, nil}])
-    |> adopt()
+      false ->
+        # The handoff prompt replaces the board — while a move performance
+        # is in flight it waits for the landing (land_move/1 releases it).
+        key = if socket.assigns.move, do: :deferred_handoff, else: :handoff
+
+        socket
+        |> Mob.Socket.assign([{key, %{player: seat}}, {:banner, nil}, {:last_shells, nil}])
+        |> adopt()
+    end
   end
 
   defp handle_event({:game_over, _over}, socket) do
     socket
     |> Mob.Socket.assign(handoff: nil, deferred_handoff: nil, banner: nil)
+    |> schedule_auto_rematch()
     |> adopt()
   end
 
   # Captures, khadus, wastes, placements: no dedicated performance — the
   # adopted state renders them (players tray, trays, scene).
   defp handle_event(_event, socket), do: adopt(socket)
+
+  # The soak loop: with the auto-loop toggle ON, a finished game rematches
+  # itself after a beat (long enough to read the podium). The timer ref
+  # guards against a stale fire after a manual rematch.
+  defp schedule_auto_rematch(%{assigns: %{auto_loop: false}} = socket), do: socket
+
+  defp schedule_auto_rematch(socket) do
+    timer = make_ref()
+    delay = Application.get_env(:chopaat, :auto_rematch_ms, @default_auto_rematch_ms)
+    Process.send_after(self(), {:auto_rematch, timer}, delay)
+    Mob.Socket.assign(socket, :rematch_timer, timer)
+  end
 
   # Re-render from the session's current truth. Idempotent per event
   # batch: the session settles every event of a command before
@@ -471,13 +590,7 @@ defmodule Chopaat.Screens.GameScreen do
           }
         ] ++
           placements ++
-          [
-            %{
-              type: :button,
-              props: %{id: :back_to_menu, text: "Back to menu", on_tap: {self(), :back_to_menu}},
-              children: []
-            }
-          ]
+          end_buttons(assigns)
     }
   end
 
@@ -501,6 +614,51 @@ defmodule Chopaat.Screens.GameScreen do
     }
   end
 
+  # Rematch keeps the seats (humans and bots alike) and reshuffles the
+  # cosmetic shell set. The auto-loop toggle appears in full-auto games —
+  # the soak switch: every finished game rematches itself.
+  defp end_buttons(assigns) do
+    compact([
+      %{
+        type: :button,
+        props: %{id: :rematch, text: "Rematch", on_tap: {self(), :rematch}},
+        children: []
+      },
+      auto_loop_toggle(assigns),
+      %{
+        type: :button,
+        props: %{
+          id: :back_to_menu,
+          text: "Back to menu",
+          background: :surface_raised,
+          text_color: :on_surface,
+          on_tap: {self(), :back_to_menu}
+        },
+        children: []
+      }
+    ])
+  end
+
+  defp auto_loop_toggle(assigns) do
+    case map_size(assigns.bots) == assigns.game.num_players do
+      false ->
+        nil
+
+      true ->
+        %{
+          type: :button,
+          props: %{
+            id: :auto_loop_toggle,
+            text: "Auto-rematch: #{if assigns.auto_loop, do: "on", else: "off"}",
+            background: if(assigns.auto_loop, do: :primary, else: :surface_raised),
+            text_color: if(assigns.auto_loop, do: :on_primary, else: :on_surface),
+            on_tap: {self(), :auto_loop_toggle}
+          },
+          children: []
+        }
+    end
+  end
+
   defp header(assigns) do
     entry = Setup.player(assigns.setup, assigns.game.turn)
 
@@ -520,9 +678,25 @@ defmodule Chopaat.Screens.GameScreen do
           swatch(entry),
           name_text(entry),
           muted_text(phase_label),
+          bot_marker(assigns),
           assisted_marker(assigns.game)
         ])
     }
+  end
+
+  # The spectator HUD's "whose turn" honesty: bot seats are named as such.
+  defp bot_marker(assigns) do
+    case bot_turn?(assigns) do
+      true ->
+        %{
+          type: :text,
+          props: %{id: :bot_marker, text: "bot", text_size: :xs, text_color: :muted},
+          children: []
+        }
+
+      false ->
+        nil
+    end
   end
 
   defp assisted_marker(game) do
@@ -570,14 +744,37 @@ defmodule Chopaat.Screens.GameScreen do
 
   # The two-phase turn structure, visibly: rolling shows the collected
   # sequence and the throw button; assigning shows the surviving rolls,
-  # bonus steps, and one button per legal action.
-  defp tray(%{game: %Game{phase: :rolling}} = assigns) do
-    collected =
-      case assigns.game.turn_rolls do
-        [] -> "Throw the shells"
-        rolls -> "Rolls so far: " <> Enum.map_join(rolls, " · ", &to_string/1)
-      end
+  # bonus steps, and one button per legal action. On a bot's turn the
+  # tray is read-only — same trays, no inputs (the runner commands the
+  # session; the human just watches).
+  defp tray(%{game: %Game{phase: :finished}}), do: []
 
+  defp tray(assigns) do
+    case bot_turn?(assigns) do
+      true -> spectator_tray(assigns)
+      false -> player_tray(assigns)
+    end
+  end
+
+  defp spectator_tray(%{game: %Game{phase: :rolling}} = assigns) do
+    [roll_tray(assigns), bot_hint(assigns, "is throwing…")]
+  end
+
+  defp spectator_tray(%{game: %Game{phase: :assigning}} = assigns) do
+    [pending_tray(assigns.game), bot_hint(assigns, "is choosing a move…")]
+  end
+
+  defp bot_hint(assigns, doing) do
+    entry = Setup.player(assigns.setup, assigns.game.turn)
+
+    %{
+      type: :text,
+      props: %{id: :bot_hint, text: "#{entry.name} #{doing}", text_size: :sm, text_color: :muted},
+      children: []
+    }
+  end
+
+  defp player_tray(%{game: %Game{phase: :rolling}} = assigns) do
     hint =
       cond do
         assigns.throw != nil -> "Shells are tumbling…"
@@ -586,11 +783,7 @@ defmodule Chopaat.Screens.GameScreen do
       end
 
     [
-      %{
-        type: :text,
-        props: %{id: :roll_tray, text: collected, text_color: :on_background},
-        children: []
-      },
+      roll_tray(assigns),
       hint &&
         %{
           type: :text,
@@ -609,22 +802,35 @@ defmodule Chopaat.Screens.GameScreen do
     ]
   end
 
-  defp tray(%{game: %Game{phase: :finished}}), do: []
+  defp player_tray(%{game: %Game{phase: :assigning}} = assigns) do
+    [pending_tray(assigns.game) | action_buttons(assigns)]
+  end
 
-  defp tray(%{game: %Game{phase: :assigning} = game} = assigns) do
+  defp roll_tray(assigns) do
+    collected =
+      case assigns.game.turn_rolls do
+        [] -> "Throw the shells"
+        rolls -> "Rolls so far: " <> Enum.map_join(rolls, " · ", &to_string/1)
+      end
+
+    %{
+      type: :text,
+      props: %{id: :roll_tray, text: collected, text_color: :on_background},
+      children: []
+    }
+  end
+
+  defp pending_tray(game) do
     pending =
       "Pending: " <>
         Enum.map_join(game.pending, " · ", &to_string/1) <>
         bonus_suffix(game.bonus_steps)
 
-    [
-      %{
-        type: :text,
-        props: %{id: :pending_tray, text: pending, text_color: :on_background},
-        children: []
-      }
-      | action_buttons(assigns)
-    ]
+    %{
+      type: :text,
+      props: %{id: :pending_tray, text: pending, text_color: :on_background},
+      children: []
+    }
   end
 
   defp throw_label(%{throw: throw, game: game}) do

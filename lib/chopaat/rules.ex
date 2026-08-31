@@ -129,6 +129,13 @@ defmodule Chopaat.Rules do
     end
   end
 
+  # The khadu arithmetic is defined on the continuous lap scale
+  # (RULESET.md: `target = x - 4 + roll`), so from x < 4 the reversal
+  # passes through positions before the launch square — real for the
+  # math, nonexistent as cells. The traversal keeps only on-board
+  # waypoints (found by the AUTO-mode soak, where a frozen pawn at x=2
+  # committed a finishing khadu and the negative positions crashed the
+  # renderer's cell lookup with a row-0 cell name).
   def action_path(%Game{} = game, {:khadu, i, ix}) do
     score = Enum.at(game.pending, i)
     reverse = game.variant.khadu_reverse
@@ -136,7 +143,10 @@ defmodule Chopaat.Rules do
     case Enum.at(Map.fetch!(game.pawns, game.turn), ix) do
       %Pawn{pos: {:track, x}} ->
         back = for step <- 1..reverse, do: {:track, x - step}
-        back ++ steps_path(game.board, true, x - reverse, score)
+
+        (back ++ steps_path(game.board, true, x - reverse, score))
+        |> Enum.reject(&match?({:track, pos} when pos < 0, &1))
+        |> Enum.dedup()
 
       _other ->
         []

@@ -90,7 +90,11 @@ defmodule Chopaat.Session do
     GenServer.start_link(__MODULE__, opts, Keyword.take(opts, [:name]))
   end
 
-  @doc "Resets to a fresh game, same seats. Options: `:rng_seed`, `:game`."
+  @doc """
+  Resets to a fresh game, same seats. Options: `:rng_seed`, `:game`, and
+  `:reshuffle` — `true` draws a fresh cosmetic shell set (a rematch keeps
+  the players but re-rolls the presentation seed, bead chopaat-27z).
+  """
   @spec new_game(session(), keyword()) :: {:ok, [event()]}
   def new_game(session, opts \\ []), do: GenServer.call(session, {:new_game, opts})
 
@@ -234,18 +238,19 @@ defmodule Chopaat.Session do
   end
 
   def handle_call({:new_game, opts}, _from, state) do
-    game = opts[:game] || Game.new(state.setup.variant, state.setup.num_players)
+    setup = if opts[:reshuffle], do: Setup.reshuffle(state.setup), else: state.setup
+    game = opts[:game] || Game.new(setup.variant, setup.num_players)
     rng = if seed = opts[:rng_seed], do: RNG.new(seed), else: state.rng
 
     event =
       {:game_started,
        %{
-         variant: state.setup.variant.name,
-         num_players: state.setup.num_players,
+         variant: setup.variant.name,
+         num_players: setup.num_players,
          turn: game.turn
        }}
 
-    commit(%{state | rng: rng}, game, [event])
+    commit(%{state | rng: rng, setup: setup}, game, [event])
   end
 
   def handle_call({:subscribe, pid}, _from, state) do
