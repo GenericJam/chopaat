@@ -52,6 +52,16 @@ cheap checks always, full preflight when `mix.exs` changes.
 
 ## Game-specific discipline
 
+- **Presentation is a client (owner ruling, 2026-08-31).** Game logic must
+  never depend on any renderer. The game lives in a presentation-agnostic
+  session boundary (pure `Chopaat.Game` reducer hosted behind a session API);
+  3D (mob_scene3d) and 2D are *frontend clients* of that session, and a web
+  client (the phone projecting a server, players joining from a computer)
+  must remain *possible* without touching game code — possible, not built.
+  Concretely: no rules/session module may import scene, screen, or UI
+  modules; anything a renderer needs is exposed as data through the session
+  API; the 2D client is deliberately simple (canvas-grade) so it doubles as
+  the debugging surface and the ground truth a human can verify at a glance.
 - **Rules stay pure.** Game logic is pure functions over state — no
   processes, no side effects, no `:rand` calls inside rules (the throw
   value is an *input* to the rules). This is what makes the rules layer
