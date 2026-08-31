@@ -24,7 +24,8 @@ defmodule Chopaat.BoundaryTest do
 
   # The game plane: the modules that must stay hostable with no renderer
   # compiled anywhere near them (bead chopaat-uzu; bots — pure session
-  # clients — joined at chopaat-27z).
+  # clients — joined at chopaat-27z; the machine-play protocol facade at
+  # chopaat-85o).
   @game_plane [
     Chopaat.Game,
     Chopaat.Rules,
@@ -35,6 +36,7 @@ defmodule Chopaat.BoundaryTest do
     Chopaat.RNG,
     Chopaat.Session,
     Chopaat.Setup,
+    Chopaat.MachinePlay,
     Chopaat.Bot,
     Chopaat.Bot.Random,
     Chopaat.Bot.Heuristic,
