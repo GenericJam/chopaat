@@ -62,6 +62,10 @@ cheap checks always, full preflight when `mix.exs` changes.
   modules; anything a renderer needs is exposed as data through the session
   API; the 2D client is deliberately simple (canvas-grade) so it doubles as
   the debugging surface and the ground truth a human can verify at a glance.
+  Verification runs on two planes: agents play via the machine API (logic)
+  or via the phone interface with Mob.Test (full stack) — and the strongest
+  suites drive the UI while asserting through the API, so presentation bugs
+  cannot hide behind correct rules or vice versa.
 - **Rules stay pure.** Game logic is pure functions over state — no
   processes, no side effects, no `:rand` calls inside rules (the throw
   value is an *input* to the rules). This is what makes the rules layer
