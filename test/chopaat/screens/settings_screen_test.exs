@@ -32,6 +32,20 @@ defmodule Chopaat.Screens.SettingsScreenTest do
     assert find(view, :toggle, id: :reshuffle).props.value == false
   end
 
+  test "the board-mode toggle reports the chosen mode back to the owning screen" do
+    view = mount_screen(SettingsScreen, %{board_mode: :board3d, parent: self()})
+    assert find(view, :toggle, id: :board2d).props.value == false
+
+    view = render_info(view, {:change, :board2d, true})
+    assert assigns(view).board_mode == :board2d
+    assert_receive {:settings_board_mode, :board2d}
+    assert find(view, :toggle, id: :board2d).props.value == true
+
+    view = render_info(view, {:change, :board2d, false})
+    assert assigns(view).board_mode == :board3d
+    assert_receive {:settings_board_mode, :board3d}
+  end
+
   test "back pops the screen" do
     view = mount_screen(SettingsScreen) |> render_info({:tap, :back})
     assert navigated_to(view) == {:pop}

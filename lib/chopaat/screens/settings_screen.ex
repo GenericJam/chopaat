@@ -4,9 +4,14 @@ defmodule Chopaat.Screens.SettingsScreen do
   reads is `Chopaat.Variant` data, and nine RULESET.md interpretation
   choices are still pending owner confirmation
   (`decisions/2026-08-30-gujarat-formalization.md`) — so this screen
-  displays the config rather than editing it. The one live control is the
+  displays the config rather than editing it. The live controls: the
   cosmetic shell-pool reshuffle toggle (new shell set per game vs a kept
-  set), reported back to the menu screen that owns the seed.
+  set) and the board-mode toggle (2D vs 3D board, bead chopaat-u8x) —
+  both reported back to the menu screen that owns them. The board mode
+  set here is the default for new games; the game screen's own toggle
+  switches mid-game. When the scene3d viewport is unsupported the 3D
+  option stays visible but the game screen falls back to 2D with a
+  notice.
   """
 
   use Mob.Screen
@@ -19,6 +24,7 @@ defmodule Chopaat.Screens.SettingsScreen do
      Mob.Socket.assign(socket,
        variant: params[:variant] || Variant.gujarat(),
        reshuffle: Map.get(params, :reshuffle, true),
+       board_mode: Map.get(params, :board_mode, :board3d),
        parent: params[:parent]
      )}
   end
@@ -31,6 +37,17 @@ defmodule Chopaat.Screens.SettingsScreen do
     end
 
     {:noreply, Mob.Socket.assign(socket, :reshuffle, value)}
+  end
+
+  def handle_info({:change, :board2d, value}, socket) do
+    mode = if value, do: :board2d, else: :board3d
+
+    case socket.assigns.parent do
+      pid when is_pid(pid) -> send(pid, {:settings_board_mode, mode})
+      _no_parent -> :ok
+    end
+
+    {:noreply, Mob.Socket.assign(socket, :board_mode, mode)}
   end
 
   def handle_info({:tap, :back}, socket) do
@@ -69,6 +86,16 @@ defmodule Chopaat.Screens.SettingsScreen do
                   label: "New shell set every game",
                   value: assigns.reshuffle,
                   on_change: {self(), :reshuffle}
+                },
+                children: []
+              },
+              %{
+                type: :toggle,
+                props: %{
+                  id: :board2d,
+                  label: "2D board (always playable)",
+                  value: assigns.board_mode == :board2d,
+                  on_change: {self(), :board2d}
                 },
                 children: []
               },

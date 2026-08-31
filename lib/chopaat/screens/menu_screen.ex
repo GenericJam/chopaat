@@ -7,10 +7,16 @@ defmodule Chopaat.Screens.MenuScreen do
   The cosmetic shell-set seed lives here between games: with the settings
   screen's reshuffle toggle ON (default) every game draws a fresh set;
   OFF keeps one seed across games.
+
+  The board mode (2D/3D, bead chopaat-u8x) also lives here between games:
+  it defaults to 2D when the scene3d native half is unsupported (the
+  always-playable ground truth), 3D otherwise, and the settings screen's
+  toggle overrides it for subsequent games.
   """
 
   use Mob.Screen
 
+  alias Chopaat.Screens.Board2D
   alias Chopaat.Screens.GameScreen
   alias Chopaat.Screens.SettingsScreen
   alias Chopaat.Setup
@@ -22,7 +28,8 @@ defmodule Chopaat.Screens.MenuScreen do
        num_players: 4,
        names: %{},
        reshuffle: true,
-       shell_seed: nil
+       shell_seed: nil,
+       board_mode: if(Board2D.scene3d_supported?(), do: :board3d, else: :board2d)
      )}
   end
 
@@ -46,16 +53,30 @@ defmodule Chopaat.Screens.MenuScreen do
       )
 
     socket = Mob.Socket.assign(socket, :shell_seed, seed)
-    {:noreply, Mob.Socket.push_screen(socket, GameScreen, %{setup: setup})}
+
+    {:noreply,
+     Mob.Socket.push_screen(socket, GameScreen, %{
+       setup: setup,
+       mode: socket.assigns.board_mode
+     })}
   end
 
   def handle_info({:tap, :settings}, socket) do
-    params = %{reshuffle: socket.assigns.reshuffle, parent: self()}
+    params = %{
+      reshuffle: socket.assigns.reshuffle,
+      board_mode: socket.assigns.board_mode,
+      parent: self()
+    }
+
     {:noreply, Mob.Socket.push_screen(socket, SettingsScreen, params)}
   end
 
   def handle_info({:settings_reshuffle, value}, socket) do
     {:noreply, Mob.Socket.assign(socket, :reshuffle, value)}
+  end
+
+  def handle_info({:settings_board_mode, mode}, socket) do
+    {:noreply, Mob.Socket.assign(socket, :board_mode, mode)}
   end
 
   def handle_info(_message, socket), do: {:noreply, socket}

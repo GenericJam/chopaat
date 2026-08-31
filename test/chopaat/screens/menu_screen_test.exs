@@ -59,4 +59,21 @@ defmodule Chopaat.Screens.MenuScreenTest do
     view = mount_screen(MenuScreen) |> render_info({:tap, :settings})
     assert navigated_to(view) == SettingsScreen
   end
+
+  test "the board mode defaults by scene3d support and follows the settings toggle" do
+    Application.put_env(:chopaat, :scene3d_support, :unsupported)
+    on_exit(fn -> Application.delete_env(:chopaat, :scene3d_support) end)
+
+    # Unsupported → the always-playable 2D board is the default.
+    view = mount_screen(MenuScreen)
+    assert assigns(view).board_mode == :board2d
+
+    Application.put_env(:chopaat, :scene3d_support, :supported)
+    view = mount_screen(MenuScreen)
+    assert assigns(view).board_mode == :board3d
+
+    # The settings screen's report overrides it for subsequent games.
+    view = render_info(view, {:settings_board_mode, :board2d})
+    assert assigns(view).board_mode == :board2d
+  end
 end

@@ -1,0 +1,93 @@
+OK   connect to chopaat_u8xdroid@127.0.0.1
+OK   Chopaat.Screens.Board2D loaded on device
+OK   game screen mounted in 2D
+OK   throw #1 presented instantly (2D)
+OK   presented snapshot == session observe (seq 1)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   throw #2 presented instantly (2D)
+OK   presented snapshot == session observe (seq 2)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   base pawn 0 selected via pad
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 3)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+EVIDENCE evidence/android_emu_2d_midgame.png
+OK   pawn 0 selected via cell cell_t0_l1_r1
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 5)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #3 presented instantly (2D)
+OK   presented snapshot == session observe (seq 6)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #4 presented instantly (2D)
+OK   presented snapshot == session observe (seq 9)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #5 presented instantly (2D)
+OK   presented snapshot == session observe (seq 12)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   throw #6 presented instantly (2D)
+OK   presented snapshot == session observe (seq 13)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   base pawn 0 selected via pad
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 14)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   pawn 0 selected via cell cell_t3_l1_r1
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 16)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #7 presented instantly (2D)
+OK   presented snapshot == session observe (seq 17)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   throw #8 presented instantly (2D)
+OK   presented snapshot == session observe (seq 18)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   pawn 0 selected via cell cell_t0_l1_r4
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 19)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   pawn 0 selected via cell cell_t1_l0_r5
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 21)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #9 presented instantly (2D)
+OK   presented snapshot == session observe (seq 22)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #10 presented instantly (2D)
+OK   presented snapshot == session observe (seq 25)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   toggle starts from 2D
+OK   toggled to 3D mid-game
+OK   same session process across the toggle
+OK   identical game state presented in 3D
+OK   scene3d viewport live after toggle
+EVIDENCE evidence/android_emu_2d_toggle_3d.png
+OK   toggled back to 2D
+OK   same session process after the round trip
+OK   identical game state back in 2D
+EVIDENCE evidence/android_emu_2d_toggle_back_2d.png
+EVIDENCE evidence/android_emu_2d_endgame.png
+
+2D ACCEPTANCE PASS: throws=10 moves=6 (all in 2D)
