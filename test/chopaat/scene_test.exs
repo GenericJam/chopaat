@@ -3,15 +3,18 @@ defmodule Chopaat.SceneTest do
 
   use ExUnit.Case, async: true
 
+  doctest Chopaat.Scene
+
   alias Chopaat.Board
   alias Chopaat.Game
   alias Chopaat.Scene
   alias Chopaat.Scene.BoardMap
+  alias Chopaat.Scene.Move
   alias Chopaat.Setup
   alias Chopaat.Support.Craft
   alias Chopaat.Support.Fixtures
   alias Mob.Scene3d.IR
-  alias Mob.Scene3d.IR.{Animation, Entity, Model}
+  alias Mob.Scene3d.IR.{Animation, Entity, Model, Transform}
 
   defp scene(game, opts \\ []) do
     Scene.build(game, Setup.new(game.num_players, seed: 5), opts)
@@ -138,5 +141,132 @@ defmodule Chopaat.SceneTest do
     refute shell.visible
 
     assert IR.validate(ir) == :ok
+  end
+
+  describe "pick-to-move (bead chopaat-hre)" do
+    test "a selected pawn glows; unselected pawns keep the plain tint" do
+      game = Fixtures.simple_move([4])
+      ir = scene(game, selected: 0)
+
+      {:ok, selected} = IR.fetch(ir, "pawn_0_0")
+      assert {_r, _g, _b} = selected.data.material.emissive
+
+      {:ok, other} = IR.fetch(ir, "pawn_0_1")
+      assert other.data.material.emissive == nil
+      # Same index on another player never lights up.
+      {:ok, foreign} = IR.fetch(ir, "pawn_1_0")
+      assert foreign.data.material.emissive == nil
+
+      assert IR.validate(ir) == :ok
+    end
+
+    test "selection grows pickable target markers on every legal landing" do
+      game = Fixtures.simple_move([4])
+      ir = scene(game, selected: 0)
+
+      # Pawn 0 at lap 20 with a 4 pending: one landing at lap 24.
+      {:ok, marker} = IR.fetch(ir, "target_assign_0_0")
+      assert marker.pickable
+
+      cell_name = Board.cell_name(Board.cell(game.board, 0, 24))
+      assert marker.transform.position == BoardMap.position("board.glb", cell_name)
+      # Flattened pawn disc, not a second pawn.
+      {_sx, sy, _sz} = marker.transform.scale
+      assert sy < 0.5
+
+      assert IR.validate(ir) == :ok
+    end
+
+    test "target ids decode back to the actions they encode" do
+      game = Fixtures.simple_move([4])
+      ir = scene(game, selected: 0)
+
+      for {"target_" <> _ = id, _entity} <- ir.entities do
+        assert {:ok, action} = Scene.decode_target(id)
+        assert action in Game.legal_actions(game)
+      end
+    end
+
+    test "khadu targets glow red (destructive), ordinary targets tint" do
+      ir = scene(Fixtures.gate_jam([7]), selected: 0)
+
+      {:ok, marker} = IR.fetch(ir, "target_khadu_0_0")
+      assert marker.pickable
+      {r, g, b} = marker.data.material.emissive
+      assert r > g and r > b
+    end
+
+    test "a base pawn's unlock marker sits on the launch square" do
+      game = Craft.game() |> Craft.assigning([25])
+      ir = scene(game, selected: 2)
+
+      {:ok, marker} = IR.fetch(ir, "target_assign_0_2")
+      launch = Board.cell_name(Board.cell(game.board, 0, 0))
+      assert marker.transform.position == BoardMap.position("board.glb", launch)
+    end
+
+    test "no selection, no markers; other pawns' actions don't leak in" do
+      game = Fixtures.simple_move([4])
+
+      targets = fn ir -> Enum.filter(ir.entities, fn {id, _} -> id =~ ~r/^target_/ end) end
+
+      assert targets.(scene(game)) == []
+      # Pawn 1 is in base with no entry score pending: nothing to offer.
+      assert targets.(scene(game, selected: 1)) == []
+    end
+
+    test "duplicate landings collapse to one marker" do
+      game = Craft.game() |> Craft.pawns(0, [20, :base, :base, :base]) |> Craft.assigning([3, 3])
+      ir = scene(game, selected: 0)
+
+      markers = for {"target_" <> _ = id, _e} <- ir.entities, do: id
+      assert match?([_lone], markers)
+    end
+  end
+
+  describe "move override (bead chopaat-hre)" do
+    test "an in-flight move replaces that pawn's transform, others untouched" do
+      game = Fixtures.simple_move([4])
+      still = scene(game)
+
+      move =
+        Move.new(
+          "pawn_0_0",
+          %Transform{position: {0.0, 0.0, 0.0}},
+          %Transform{position: {0.1, 0.0, 0.0}},
+          [{0.1, 0.0, 0.0}],
+          0
+        )
+
+      mid = div(move.duration_ms, 2)
+      ir = scene(game, move: move, move_now: mid)
+
+      {:ok, moving} = IR.fetch(ir, "pawn_0_0")
+      assert moving.transform == Move.transform(move, mid)
+
+      {:ok, bystander} = IR.fetch(ir, "pawn_1_0")
+      {:ok, was} = IR.fetch(still, "pawn_1_0")
+      assert bystander.transform == was.transform
+
+      # No target markers while a move performs.
+      refute Enum.any?(ir.entities, fn {id, _} -> String.starts_with?(id, "target_") end)
+      assert IR.validate(ir) == :ok
+    end
+
+    test "waypoints map the rules path onto board cell positions" do
+      game = Fixtures.simple_move([4])
+      path = Chopaat.Rules.action_path(game, {:assign, 0, 0})
+
+      positions = Scene.waypoints(game, 0, path)
+
+      assert Enum.count(positions) == 4
+
+      expected =
+        for {:track, x} <- path do
+          BoardMap.position("board.glb", Board.cell_name(Board.cell(game.board, 0, x)))
+        end
+
+      assert positions == expected
+    end
   end
 end

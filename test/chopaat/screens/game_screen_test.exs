@@ -4,9 +4,15 @@ defmodule Chopaat.Screens.GameScreenTest do
   # async: false — the Chopaat.Throws impl is swapped via application env.
   use Mob.ScreenCase, async: false
 
+  import ExUnit.CaptureLog
+
+  alias Chopaat.Board
   alias Chopaat.Game
+  alias Chopaat.Scene.BoardMap
+  alias Chopaat.Scene.Move
   alias Chopaat.Screens.GameScreen
   alias Chopaat.Setup
+  alias Chopaat.Support.Craft
   alias Chopaat.Support.Fixtures
   alias Chopaat.Support.ThrowsStub
   alias Mob.Scene3d.IR
@@ -33,6 +39,20 @@ defmodule Chopaat.Screens.GameScreenTest do
   end
 
   defp play_id(view), do: assigns(view).throw.animation.play_id
+
+  # Drives {:move_tick, ref} self-messages (real timers land in the test
+  # mailbox — ScreenCase runs callbacks in the test process) until the
+  # move performance finishes.
+  defp settle_move(view) do
+    case assigns(view).move do
+      nil ->
+        view
+
+      %Move{ref: ref} ->
+        assert_receive {:move_tick, ^ref}, 500
+        view |> render_info({:move_tick, ref}) |> settle_move()
+    end
+  end
 
   describe "mounting" do
     test "opens in the rolling phase: viewport, throw button, players tray" do
@@ -143,7 +163,15 @@ defmodule Chopaat.Screens.GameScreenTest do
       action = hd(Game.legal_actions(assigns(view).game))
       view = render_info(view, {:tap, {:action, action}})
 
+      # The rules advanced immediately, but the handoff waits for the move
+      # performance to land — the board stays visible while the pawn hops.
       assert assigns(view).game.turn == 1
+      assert %Move{} = assigns(view).move
+      assert assigns(view).handoff == nil
+      assert assigns(view).deferred_handoff == %{player: 1}
+      assert find(view, :native_view, id: :board)
+
+      view = settle_move(view)
       assert text(view) =~ "Pass the device"
       assert find(view, :button, id: :handoff_done)
       # The board is hidden during handoff.
@@ -258,13 +286,146 @@ defmodule Chopaat.Screens.GameScreenTest do
     end
   end
 
-  describe "chopaat-hre seam" do
-    test "pawn pick events are received and deliberately unhandled here" do
-      view = mount_game()
-      before = assigns(view).game
+  describe "pick-to-move" do
+    test "picking an own pawn selects it and grows target markers; re-pick deselects" do
+      view = mount_game(game: Fixtures.simple_move([4]))
 
       view = render_info(view, {:pawn_picked, "pawn_0_0"})
+      assert assigns(view).selected == 0
+      assert {:ok, marker} = IR.fetch(assigns(view).scene, "target_assign_0_0")
+      assert marker.pickable
+
+      view = render_info(view, {:pawn_picked, "pawn_0_0"})
+      assert assigns(view).selected == nil
+
+      assert {:error, {:unknown_entity, _id}} =
+               IR.fetch(assigns(view).scene, "target_assign_0_0")
+    end
+
+    test "another player's pawn, or any pawn outside assigning, does not select" do
+      view = mount_game(game: Fixtures.simple_move([4]))
+      view = render_info(view, {:pawn_picked, "pawn_1_0"})
+      assert assigns(view).selected == nil
+
+      rolling = mount_game() |> render_info({:pawn_picked, "pawn_0_0"})
+      assert assigns(rolling).selected == nil
+    end
+
+    test "tapping a target marker commits the action and performs the move" do
+      view = mount_game(game: Fixtures.simple_move([4]))
+      view = render_info(view, {:pawn_picked, "pawn_0_0"})
+      view = render_info(view, {:pawn_picked, "target_assign_0_0"})
+
+      # Rules advanced (roll consumed), selection cleared, move in flight.
+      assert Craft.pos(assigns(view).game, 0, 0) == {:track, 24}
+      assert assigns(view).selected == nil
+      assert %Move{entity_id: "pawn_0_0"} = assigns(view).move
+
+      # While ticking, the scene carries the interpolated pose — the pawn
+      # has left its start cell but not yet reached the landing.
+      start = BoardMap.position("board.glb", "cell_t1_l2_r5")
+      %Move{ref: ref} = assigns(view).move
+      assert_receive {:move_tick, ^ref}, 500
+      view = render_info(view, {:move_tick, ref})
+
+      {:ok, pawn} = IR.fetch(assigns(view).scene, "pawn_0_0")
+      refute pawn.transform.position == start
+    end
+
+    test "the move lands on the settled scene pose and the board survives ticks" do
+      view = mount_game(game: Fixtures.simple_move([4]))
+      view = render_info(view, {:pawn_picked, "pawn_0_0"})
+      view = render_info(view, {:pawn_picked, "target_assign_0_0"})
+
+      view = settle_move(view)
+      assert assigns(view).move == nil
+
+      {:ok, pawn} = IR.fetch(assigns(view).scene, "pawn_0_0")
+      cell = Board.cell(assigns(view).game.board, 0, 24)
+
+      assert pawn.transform.position == BoardMap.position("board.glb", Board.cell_name(cell))
+    end
+
+    test "a khadu target routes through the confirm dialog before committing" do
+      view = mount_game(game: Fixtures.gate_jam([7]))
+      view = render_info(view, {:pawn_picked, "pawn_0_0"})
+
+      assert {:ok, _marker} = IR.fetch(assigns(view).scene, "target_khadu_0_0")
+
+      before = assigns(view).game
+      view = render_info(view, {:pawn_picked, "target_khadu_0_0"})
+
+      assert find(view, :column, id: :khadu_dialog)
       assert assigns(view).game == before
+
+      view = render_info(view, {:tap, :khadu_confirm})
+      assert assigns(view).game != before
+      assert %Move{} = assigns(view).move
+    end
+
+    test "a stale target tap (no longer legal) is dropped" do
+      view = mount_game(game: Fixtures.simple_move([4]))
+      before = assigns(view).game
+
+      view = render_info(view, {:pawn_picked, "target_assign_3_0"})
+      assert assigns(view).game == before
+    end
+
+    test "action taps are ignored while a move performs" do
+      view = mount_game(game: Fixtures.simple_move([4, 3]))
+      view = render_info(view, {:tap, {:action, {:assign, 0, 0}}})
+      assert %Move{} = assigns(view).move
+
+      before = assigns(view).game
+      view = render_info(view, {:tap, {:action, {:assign, 0, 0}}})
+      assert assigns(view).game == before
+
+      view = settle_move(view)
+      view = render_info(view, {:tap, {:action, {:assign, 0, 0}}})
+      assert assigns(view).game != before
+    end
+  end
+
+  describe "the settle check (throw honesty)" do
+    test "each settled throw records its readback verdict" do
+      ThrowsStub.script([2])
+      ThrowsStub.settle_verdicts([:ok])
+
+      view = mount_game() |> render_info({:tap, :throw})
+      view = render_info(view, {:animation_done, play_id(view)})
+
+      assert assigns(view).settle == %{ok: 1, mismatch: 0, skipped: 0, error: 0}
+      assert {"throw_k2_v0", :ok} = assigns(view).last_settle
+    end
+
+    test "a mismatch is counted and logged — and the rules still apply" do
+      ThrowsStub.script([2])
+      ThrowsStub.settle_verdicts([{:mismatch, %{animation: "throw_k2_v0"}}])
+
+      view = mount_game() |> render_info({:tap, :throw})
+
+      log =
+        capture_log(fn ->
+          view = render_info(view, {:animation_done, play_id(view)})
+          send(self(), {:checked, assigns(view)})
+        end)
+
+      assert log =~ "tumble settle mismatch"
+      assert log =~ "trusting the rules"
+
+      assert_receive {:checked, assigns}
+      assert assigns.settle.mismatch == 1
+      # The drawn roll still applied.
+      assert assigns.game.pending == [2]
+    end
+
+    test "without a native scene the check is skipped, not failed" do
+      ThrowsStub.script([2])
+
+      view = mount_game() |> render_info({:tap, :throw})
+      view = render_info(view, {:animation_done, play_id(view)})
+
+      assert assigns(view).settle.skipped == 1
     end
   end
 end

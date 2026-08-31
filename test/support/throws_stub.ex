@@ -16,6 +16,7 @@ defmodule Chopaat.Support.ThrowsStub do
   alias Mob.Scene3d.IR.Animation
 
   @key :chopaat_throws_stub_script
+  @settle_key :chopaat_throws_stub_settle
 
   def script(up_counts), do: Process.put(@key, up_counts)
 
@@ -35,4 +36,19 @@ defmodule Chopaat.Support.ThrowsStub do
 
   @impl Chopaat.Throws
   def schedule_done(_pid, _play_id), do: :ok
+
+  @doc "Scripts the next settle verdicts (defaults to `:skipped`)."
+  def settle_verdicts(verdicts), do: Process.put(@settle_key, verdicts)
+
+  @impl Chopaat.Throws
+  def settle_check(_viewport_id, _animation_name) do
+    case Process.get(@settle_key) do
+      [verdict | rest] ->
+        Process.put(@settle_key, rest)
+        verdict
+
+      _empty_or_unset ->
+        :skipped
+    end
+  end
 end

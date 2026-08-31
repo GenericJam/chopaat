@@ -16,21 +16,37 @@ defmodule Chopaat.Screens.GameScreen do
   Forced khadus surface as explicit options gated by a confirm dialog that
   names what burns (*dana ane pagdu badi gaya*). Pass-and-play handoff: a
   full-screen prompt replaces the board whenever the turn passes to
-  another player.
+  another player (deferred until an in-flight move animation lands, so the
+  viewport survives the performance).
 
-  Boundary note (bead chopaat-mgw): assignment here is HUD-driven; 3D
-  pick-to-move, real tumble playback, and camera work are the integration
-  bead (chopaat-hre).
+  Integration (bead chopaat-hre): pick-to-move — `{:pawn_picked, id}` on a
+  current-player pawn selects it and the scene grows pickable `"target_*"`
+  markers on every legal landing (tapping one commits the action; khadu
+  targets route through the confirm dialog). Committed movement actions
+  play as an eased per-cell hop (`Chopaat.Scene.Move`, `{:move_tick, ref}`
+  self-messages, plain IR transform updates). Throws settle natively:
+  `{:animation_done, play_id}` arrives from the plugin, and before the
+  roll applies the screen runs `Chopaat.Throws.settle_check/2` — scene
+  readback asserting the slot orientations match the manifest — recording
+  the verdict in `assigns.settle` and logging mismatches loudly (rules are
+  trusted, never the visual).
   """
 
   use Mob.Screen
 
+  require Logger
+
   alias Chopaat.Game
   alias Chopaat.RNG
+  alias Chopaat.Rules
   alias Chopaat.Scene
+  alias Chopaat.Scene.Move
   alias Chopaat.Setup
   alias Chopaat.Throws
   alias Chopaat.Variant
+  alias Mob.Scene3d.IR
+
+  @viewport_id "board"
 
   @impl Mob.Screen
   def mount(params, _session, socket) do
@@ -46,7 +62,12 @@ defmodule Chopaat.Screens.GameScreen do
         throw: nil,
         khadu: nil,
         handoff: nil,
-        banner: nil
+        deferred_handoff: nil,
+        banner: nil,
+        selected: nil,
+        move: nil,
+        settle: %{ok: 0, mismatch: 0, skipped: 0, error: 0},
+        last_settle: nil
       )
 
     {:ok, rebuild_scene(socket)}
@@ -56,9 +77,9 @@ defmodule Chopaat.Screens.GameScreen do
 
   @impl Mob.Screen
   def handle_info({:tap, :throw}, socket) do
-    %{game: game, rng: rng, throw: in_flight, handoff: handoff} = socket.assigns
+    %{game: game, rng: rng, throw: in_flight, handoff: handoff, move: move} = socket.assigns
 
-    case game.phase == :rolling and is_nil(in_flight) and is_nil(handoff) do
+    case game.phase == :rolling and is_nil(in_flight) and is_nil(handoff) and is_nil(move) do
       false ->
         {:noreply, socket}
 
@@ -73,7 +94,11 @@ defmodule Chopaat.Screens.GameScreen do
 
   def handle_info({:animation_done, play_id}, socket) do
     case socket.assigns.throw do
-      %{animation: %{play_id: ^play_id}, shells: shells} ->
+      %{animation: %{play_id: ^play_id, name: name}, shells: shells} ->
+        # The shells have settled — before the score counts, assert the
+        # performance matched the draw (honest-harness posture): readback
+        # runs while the tumble entity is still the visible truth.
+        socket = record_settle(socket, name, Throws.settle_check(@viewport_id, name))
         socket = Mob.Socket.assign(socket, throw: nil, last_shells: shells)
         {:noreply, advance(socket, {:roll, shells})}
 
@@ -83,6 +108,12 @@ defmodule Chopaat.Screens.GameScreen do
   end
 
   # ── assignment ───────────────────────────────────────────────────────────
+
+  def handle_info({:tap, {:action, _action}}, %{assigns: %{move: move}} = socket)
+      when not is_nil(move) do
+    # A move performance is in flight; the tray re-renders when it lands.
+    {:noreply, socket}
+  end
 
   def handle_info({:tap, {:action, {:khadu, _roll, _pawn} = action}}, socket) do
     # Khadu commits are gated behind the confirm dialog naming the burn.
@@ -114,13 +145,96 @@ defmodule Chopaat.Screens.GameScreen do
     {:noreply, Mob.Socket.pop_screen(socket)}
   end
 
-  def handle_info({:pawn_picked, _entity_id}, socket) do
-    # 3D pick-to-move is the integration bead (chopaat-hre); the viewport
-    # already tags pawns pickable so the event arrives here when wired.
-    {:noreply, socket}
+  # ── pick-to-move ─────────────────────────────────────────────────────────
+
+  def handle_info({:pawn_picked, entity_id}, socket) do
+    %{game: game, move: move, khadu: khadu, handoff: handoff} = socket.assigns
+
+    case is_nil(move) and is_nil(khadu) and is_nil(handoff) do
+      false -> {:noreply, socket}
+      true -> {:noreply, picked(socket, game, entity_id)}
+    end
+  end
+
+  def handle_info({:move_tick, ref}, socket) do
+    case socket.assigns.move do
+      %Move{ref: ^ref} = move ->
+        now = now_ms()
+
+        case Move.done?(move, now) do
+          true -> {:noreply, socket |> Mob.Socket.assign(:move, nil) |> land_move()}
+          false -> {:noreply, tick_move(socket, move, now)}
+        end
+
+      _stale_or_none ->
+        {:noreply, socket}
+    end
   end
 
   def handle_info(_message, socket), do: {:noreply, socket}
+
+  # On mismatch the visual lied (a wire/applier/asset bug, by construction).
+  # Log loudly, count it, and trust the rules — the game state advances
+  # from the drawn shells regardless.
+  defp record_settle(socket, name, verdict) do
+    key =
+      case verdict do
+        :ok -> :ok
+        :skipped -> :skipped
+        {:mismatch, report} -> loud(name, report, :mismatch)
+        {:error, reason} -> loud(name, reason, :error)
+      end
+
+    settle = Map.update!(socket.assigns.settle, key, &(&1 + 1))
+    Mob.Socket.assign(socket, settle: settle, last_settle: {name, verdict})
+  end
+
+  defp loud(name, detail, key) do
+    Logger.error(
+      "[chopaat] tumble settle #{key} for #{name}: #{inspect(detail)} — trusting the rules"
+    )
+
+    key
+  end
+
+  # Tapping a current-player pawn in the assigning phase (toggle-)selects
+  # it; the scene rebuild grows its target markers.
+  defp picked(socket, %Game{phase: :assigning} = game, "pawn_" <> _ = id) do
+    with [player, ix] <- decode_pawn(id),
+         true <- player == game.turn do
+      selected = if socket.assigns.selected == ix, do: nil, else: ix
+      socket |> Mob.Socket.assign(:selected, selected) |> rebuild_scene()
+    else
+      _other_player_or_bad_id -> socket
+    end
+  end
+
+  # Tapping a target marker commits its action (khadus via the confirm
+  # dialog — they burn dana/pagdu, a destructive choice the player must
+  # see coming). Stale marker taps fail the legality re-check and drop.
+  defp picked(socket, %Game{phase: :assigning} = game, "target_" <> _ = id) do
+    with {:ok, action} <- Scene.decode_target(id),
+         true <- action in Game.legal_actions(game) do
+      case action do
+        {:khadu, _i, _ix} -> Mob.Socket.assign(socket, :khadu, action)
+        _committable -> advance(socket, action)
+      end
+    else
+      _stale_or_bad_id -> socket
+    end
+  end
+
+  defp picked(socket, _game, _entity_id), do: socket
+
+  defp decode_pawn(id) do
+    with ["pawn", player, ix] <- String.split(id, "_"),
+         {player, ""} <- Integer.parse(player),
+         {ix, ""} <- Integer.parse(ix) do
+      [player, ix]
+    else
+      _malformed -> :error
+    end
+  end
 
   defp advance(socket, event) do
     game = socket.assigns.game
@@ -128,7 +242,8 @@ defmodule Chopaat.Screens.GameScreen do
     case Game.apply_event(game, event) do
       {:ok, next} ->
         socket
-        |> Mob.Socket.assign(:game, next)
+        |> Mob.Socket.assign(game: next, selected: nil)
+        |> start_move(game, event)
         |> note_transition(game, next)
         |> rebuild_scene()
 
@@ -139,13 +254,69 @@ defmodule Chopaat.Screens.GameScreen do
     end
   end
 
+  # A committed movement action performs as an eased per-cell hop from the
+  # pawn's current scene pose to its settled one (Chopaat.Scene.Move).
+  defp start_move(socket, prev_game, event) do
+    id = moving_entity(prev_game, event)
+    path = if id, do: Rules.action_path(prev_game, event), else: []
+
+    with true <- path != [],
+         {:ok, %{transform: from}} <- IR.fetch(socket.assigns.scene, id),
+         {:ok, %{transform: to}} <- IR.fetch(settled_scene(socket), id) do
+      move = Move.new(id, from, to, Scene.waypoints(prev_game, prev_game.turn, path), now_ms())
+      Process.send_after(self(), {:move_tick, move.ref}, Move.tick_ms())
+      Mob.Socket.assign(socket, :move, move)
+    else
+      _no_path_or_entity -> socket
+    end
+  end
+
+  defp moving_entity(game, {:assign, _i, ix}), do: "pawn_#{game.turn}_#{ix}"
+  defp moving_entity(game, {:bonus_step, ix}), do: "pawn_#{game.turn}_#{ix}"
+  defp moving_entity(game, {:khadu, _i, ix}), do: "pawn_#{game.turn}_#{ix}"
+  defp moving_entity(_game, _event), do: nil
+
+  # Where the pawn will rest once the move lands: the next state's scene
+  # without the in-flight override (stack fan-out, tip, home ring included).
+  defp settled_scene(socket) do
+    %{game: game, setup: setup, throw: throw, last_shells: last_shells} = socket.assigns
+    Scene.build(game, setup, shells_up: last_shells, throw_animation: throw && throw.animation)
+  end
+
+  defp tick_move(socket, move, now) do
+    Process.send_after(self(), {:move_tick, move.ref}, Move.tick_ms())
+    rebuild_scene(socket, now)
+  end
+
+  # The landing beat: drop the override (the settled scene pose is the
+  # landing) and release any handoff deferred behind the performance.
+  defp land_move(socket) do
+    case socket.assigns.deferred_handoff do
+      nil ->
+        rebuild_scene(socket)
+
+      handoff ->
+        socket
+        |> Mob.Socket.assign(handoff: handoff, deferred_handoff: nil)
+        |> rebuild_scene()
+    end
+  end
+
   defp note_transition(socket, prev, next) do
     cond do
       next.phase == :finished ->
-        Mob.Socket.assign(socket, handoff: nil, banner: nil)
+        Mob.Socket.assign(socket, handoff: nil, deferred_handoff: nil, banner: nil)
 
       next.turn != prev.turn and next.phase == :rolling ->
-        Mob.Socket.assign(socket, handoff: %{player: next.turn}, banner: nil, last_shells: nil)
+        # The handoff prompt replaces the board — while a move performance
+        # is in flight it waits for the landing (land_move/1 releases it).
+        key = if socket.assigns.move, do: :deferred_handoff, else: :handoff
+
+        Mob.Socket.assign(socket, [
+          {key, %{player: next.turn}},
+          {:banner, nil},
+          {:last_shells, nil}
+        ])
 
       next.turn == prev.turn and next.phase == :rolling and prev.phase == :assigning ->
         Mob.Socket.assign(socket, :banner, "Extra turn — capture!")
@@ -162,17 +333,22 @@ defmodule Chopaat.Screens.GameScreen do
     end
   end
 
-  defp rebuild_scene(socket) do
+  defp rebuild_scene(socket, now \\ nil) do
     %{game: game, setup: setup, throw: throw, last_shells: last_shells} = socket.assigns
 
     scene =
       Scene.build(game, setup,
         shells_up: last_shells,
-        throw_animation: throw && throw.animation
+        throw_animation: throw && throw.animation,
+        selected: socket.assigns.selected,
+        move: socket.assigns.move,
+        move_now: now || now_ms()
       )
 
     Mob.Socket.assign(socket, :scene, scene)
   end
+
+  defp now_ms, do: System.monotonic_time(:millisecond)
 
   # ── render ───────────────────────────────────────────────────────────────
 
@@ -208,7 +384,9 @@ defmodule Chopaat.Screens.GameScreen do
     }
   end
 
-  def render(%{game: %Game{phase: :finished}} = assigns) do
+  # The game-over report waits for the final move performance to land
+  # (`move: nil`) so the last hop plays out on the board.
+  def render(%{game: %Game{phase: :finished}, move: nil} = assigns) do
     placements =
       for {player, rank} <- Enum.with_index(assigns.game.placements, 1) do
         entry = Setup.player(assigns.setup, player)
@@ -275,6 +453,8 @@ defmodule Chopaat.Screens.GameScreen do
       case assigns.game.phase do
         :rolling -> "Collect rolls"
         :assigning -> "Assign moves"
+        # Visible only while the final move performance lands.
+        :finished -> "Game over"
       end
 
     %{
@@ -373,6 +553,8 @@ defmodule Chopaat.Screens.GameScreen do
       }
     ]
   end
+
+  defp tray(%{game: %Game{phase: :finished}}), do: []
 
   defp tray(%{game: %Game{phase: :assigning} = game} = assigns) do
     pending =

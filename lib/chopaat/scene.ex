@@ -22,12 +22,24 @@ defmodule Chopaat.Scene do
       (aperture-up = 180° roll about X, the authoring contract).
     * `"tumbles"` — the baked tumble library, visible only while a throw
       is in flight; `Chopaat.Throws` supplies its `%Animation{}` state.
+    * `"target_*"` — pick-to-move destination markers (bead chopaat-hre):
+      while a pawn is `:selected`, every legal action it can absorb gets a
+      flattened pawn-disc marker on its landing cell (`Rules.action_path/2`
+      decides the landing), pickable, with the action encoded in the entity
+      id (`decode_target/1`) so tapping a marker commits the action. Khadu
+      landings glow red; ordinary landings glow the player tint. The
+      selected pawn itself gets an emissive lift.
+
+  A `:move` override (see `Chopaat.Scene.Move`) replaces one pawn's
+  computed transform while its move animation is in flight.
   """
 
   alias Chopaat.Board
   alias Chopaat.Game
   alias Chopaat.Pawn
+  alias Chopaat.Rules
   alias Chopaat.Scene.BoardMap
+  alias Chopaat.Scene.Move
   alias Chopaat.Setup
   alias Mob.Scene3d.IR
   alias Mob.Scene3d.IR.{Camera, Entity, Light, Material, Model, Transform}
@@ -56,17 +68,25 @@ defmodule Chopaat.Scene do
     * `:throw_animation` — the in-flight `%Mob.Scene3d.IR.Animation{}`
       from `Chopaat.Throws`; while set, the tumble entity plays it and the
       static shells hide.
+    * `:selected` — the current player's selected pawn index (pick-to-move):
+      lifts that pawn emissively and adds the `"target_*"` markers.
+    * `:move` — `%Chopaat.Scene.Move{}` in flight; overrides that entity's
+      transform with `Move.transform/2` evaluated at `:move_now` ms.
   """
   @spec build(Game.t(), Setup.t(), keyword()) :: IR.t()
   def build(%Game{} = game, %Setup{} = setup, opts \\ []) do
     board = board_asset(game.num_players)
     shells_up = Keyword.get(opts, :shells_up)
     throw_animation = Keyword.get(opts, :throw_animation)
+    selected = Keyword.get(opts, :selected)
+    move = Keyword.get(opts, :move)
+    move_now = Keyword.get(opts, :move_now, 0)
 
     IR.new(
       rig(game.num_players) ++
         [board_entity(board)] ++
-        pawn_entities(game, setup, board) ++
+        pawn_entities(game, setup, board, selected, move, move_now) ++
+        target_entities(game, setup, board, selected, move) ++
         shell_entities(setup, board, shells_up, throw_animation) ++
         [tumbles_entity(board, throw_animation)]
     )
@@ -96,20 +116,39 @@ defmodule Chopaat.Scene do
 
   # ── pawns ────────────────────────────────────────────────────────────────
 
-  defp pawn_entities(game, setup, board) do
+  defp pawn_entities(game, setup, board, selected, move, move_now) do
     for {player, pawns} <- Enum.sort(game.pawns),
         {pawn, ix} <- Enum.with_index(pawns) do
+      id = "pawn_#{player}_#{ix}"
+      selected? = player == game.turn and ix == selected
+      tint = Setup.player(setup, player).tint
+
       %Entity{
-        id: "pawn_#{player}_#{ix}",
-        transform: pawn_transform(game, board, player, ix, pawn),
+        id: id,
+        transform: pawn_pose(game, board, player, ix, pawn, move, move_now, id),
         pickable: true,
         data: %Model{
           asset: "pawn.glb",
-          material: %Material{base_color: Setup.player(setup, player).tint}
+          material: %Material{
+            base_color: tint,
+            emissive: if(selected?, do: emissive(tint), else: nil)
+          }
         }
       }
     end
   end
+
+  defp pawn_pose(_game, _board, _player, _ix, _pawn, %Move{entity_id: id} = move, now, id) do
+    Move.transform(move, now)
+  end
+
+  defp pawn_pose(game, board, player, ix, pawn, _move, _now, _id) do
+    pawn_transform(game, board, player, ix, pawn)
+  end
+
+  # A dimmed-tint glow: bright enough to read as "picked" without blowing
+  # out the tint under the sun light.
+  defp emissive({r, g, b, _a}), do: {r * 0.5, g * 0.5, b * 0.5}
 
   defp pawn_transform(_game, board, player, ix, %Pawn{pos: :base}) do
     %Transform{position: BoardMap.position(board, "base_t#{player}_seat_#{ix}")}
@@ -162,6 +201,112 @@ defmodule Chopaat.Scene do
     end
   end
 
+  # ── pick-to-move target markers ──────────────────────────────────────────
+
+  # Marker look: the neutral pawn asset flattened to a disc on the landing
+  # cell (no new asset, no new plugin surface), emissive so it reads on the
+  # dark board. Pickable — tapping the marker IS committing the action.
+  @marker_scale {1.1, 0.16, 1.1}
+  @khadu_glow {0.55, 0.04, 0.04}
+
+  defp target_entities(%Game{phase: :assigning} = game, setup, board, selected, nil = _move)
+       when is_integer(selected) do
+    tint = Setup.player(setup, game.turn).tint
+
+    game
+    |> Game.legal_actions()
+    |> Enum.filter(&(action_pawn(&1) == selected))
+    |> Enum.map(&{&1, List.last(Rules.action_path(game, &1))})
+    |> Enum.reject(fn {_action, landing} -> is_nil(landing) end)
+    |> Enum.uniq_by(fn {_action, landing} -> landing end)
+    |> Enum.map(fn {action, landing} ->
+      %Entity{
+        id: target_id(action),
+        transform: %Transform{
+          position: landing_position(game, board, game.turn, landing),
+          scale: @marker_scale
+        },
+        pickable: true,
+        data: %Model{
+          asset: "pawn.glb",
+          material: %Material{base_color: tint, emissive: marker_glow(action, tint)}
+        }
+      }
+    end)
+  end
+
+  defp target_entities(_game, _setup, _board, _selected, _move), do: []
+
+  defp action_pawn({:assign, _i, ix}), do: ix
+  defp action_pawn({:bonus_step, ix}), do: ix
+  defp action_pawn({:khadu, _i, ix}), do: ix
+  defp action_pawn(_action), do: nil
+
+  defp marker_glow({:khadu, _i, _ix}, _tint), do: @khadu_glow
+  defp marker_glow(_action, {r, g, b, _a}), do: {r * 0.6, g * 0.6, b * 0.6}
+
+  defp landing_position(game, board, player, {:track, x}) do
+    cell = Board.cell(game.board, player, x)
+    BoardMap.position(board, Board.cell_name(cell))
+  end
+
+  defp landing_position(game, board, player, :home) do
+    {cx, cy, cz} = BoardMap.position(board, "center_home")
+    angle = 2.0 * :math.pi() * player / game.num_players
+
+    {cx + @home_ring_radius * :math.sin(angle), cy, cz + @home_ring_radius * :math.cos(angle)}
+  end
+
+  @doc """
+  The action a `"target_*"` marker entity id encodes, or `:error`.
+
+      iex> Chopaat.Scene.decode_target("target_assign_1_2")
+      {:ok, {:assign, 1, 2}}
+      iex> Chopaat.Scene.decode_target("target_khadu_0_3")
+      {:ok, {:khadu, 0, 3}}
+      iex> Chopaat.Scene.decode_target("target_bonus_1")
+      {:ok, {:bonus_step, 1}}
+      iex> Chopaat.Scene.decode_target("pawn_0_1")
+      :error
+  """
+  @spec decode_target(String.t()) :: {:ok, Rules.action()} | :error
+  def decode_target("target_assign_" <> rest), do: decode_pair(rest, :assign)
+  def decode_target("target_khadu_" <> rest), do: decode_pair(rest, :khadu)
+
+  def decode_target("target_bonus_" <> rest) do
+    case Integer.parse(rest) do
+      {ix, ""} -> {:ok, {:bonus_step, ix}}
+      _other -> :error
+    end
+  end
+
+  def decode_target(_id), do: :error
+
+  defp target_id({:assign, i, ix}), do: "target_assign_#{i}_#{ix}"
+  defp target_id({:khadu, i, ix}), do: "target_khadu_#{i}_#{ix}"
+  defp target_id({:bonus_step, ix}), do: "target_bonus_#{ix}"
+
+  defp decode_pair(rest, tag) do
+    with [a, b] <- String.split(rest, "_"),
+         {i, ""} <- Integer.parse(a),
+         {ix, ""} <- Integer.parse(b) do
+      {:ok, {tag, i, ix}}
+    else
+      _other -> :error
+    end
+  end
+
+  @doc """
+  World positions for a move's traversed path (`Chopaat.Rules.action_path/2`
+  output) — the `Chopaat.Scene.Move` waypoints.
+  """
+  @spec waypoints(Game.t(), non_neg_integer(), [Pawn.position()]) ::
+          [{float(), float(), float()}]
+  def waypoints(%Game{} = game, player, path) do
+    board = board_asset(game.num_players)
+    Enum.map(path, &landing_position(game, board, player, &1))
+  end
+
   # ── shells ───────────────────────────────────────────────────────────────
 
   defp shell_entities(setup, board, shells_up, throw_animation) do
@@ -197,8 +342,13 @@ defmodule Chopaat.Scene do
 
   # The tumble library's origin sits at the center-plate top surface
   # (assets/tumble_manifest.json contract). Slot-mesh substitution (the
-  # game's cosmetic shells performing the tumble) is plugin integration —
-  # chopaat-hre; until then the entity plays the baked proxy shells.
+  # game's cosmetic shells performing the tumble) needs an IR surface the
+  # plugin does not have: Model.asset is whole-instance (a changed asset
+  # is a :replace_entity destroy+recreate, animations included) and
+  # entities cannot parent to a named glTF node of another instance —
+  # filed as mob_scene3d-kgd. v1 workaround (removal: chopaat-25o): the
+  # canonical proxy hulls perform the flight; the real pool shells pose at
+  # rest after settle (the visible swap above).
   defp tumbles_entity(board, throw_animation) do
     %Entity{
       id: "tumbles",
