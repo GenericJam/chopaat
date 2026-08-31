@@ -120,6 +120,35 @@ defmodule Chopaat.RulesTest do
       refute Enum.any?(path, &match?({:track, x} when x > 75, &1))
     end
 
+    test "a khadu from below the reverse distance keeps its path on the board" do
+      # AUTO-soak regression (bead chopaat-27z): a tod-holding pawn at
+      # x=2 with pending 30+30+25 (total 85 > the 81 home distance) is
+      # frozen by finishing accounting and forced into a khadu. The
+      # reversal arithmetic passes through positions before the launch
+      # square; the traversal must emit only real cells (the negative
+      # positions crashed the renderer's cell lookup with a row-0 name).
+      game =
+        Craft.game()
+        |> Craft.tod(0)
+        |> Craft.pawns(0, [2, :home, :home, :home])
+        |> Craft.assigning([30, 30, 25])
+
+      legal = Chopaat.Game.legal_actions(game)
+      assert legal != []
+      assert Enum.all?(legal, &match?({:khadu, _i, 0}, &1))
+
+      for action <- legal do
+        path = Rules.action_path(game, action)
+
+        assert path != []
+        refute Enum.any?(path, &match?({:track, x} when x < 0, &1))
+        assert path == Enum.dedup(path)
+      end
+
+      # The landing still matches the ruleset arithmetic: 2 - 4 + 30 = 28.
+      assert game |> Rules.action_path({:khadu, 0, 0}) |> List.last() == {:track, 28}
+    end
+
     test "every path's landing agrees with the executed move" do
       game = Chopaat.Support.Fixtures.simple_move([7])
       [action | _rest] = Chopaat.Game.legal_actions(game)

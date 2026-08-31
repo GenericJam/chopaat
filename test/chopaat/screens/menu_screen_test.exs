@@ -75,5 +75,73 @@ defmodule Chopaat.Screens.MenuScreenTest do
     # The settings screen's report overrides it for subsequent games.
     view = render_info(view, {:settings_board_mode, :board2d})
     assert assigns(view).board_mode == :board2d
+
+    # Start carries the mode to the game screen — an AUTO game on an
+    # unsupported device spectates in 2D (beads chopaat-u8x × chopaat-27z).
+    view = render_info(view, {:tap, :start})
+    assert pushed_params(view).mode == :board2d
+  end
+
+  # The push params carried to the game screen (in-BEAM nav action).
+  defp pushed_params(view) do
+    {:push, GameScreen, params} = view.socket.__mob__.nav_action
+    params
+  end
+
+  describe "seat configuration (bead chopaat-27z)" do
+    test "every seat mounts human with a cycling seat-type chip" do
+      view = mount_screen(MenuScreen)
+
+      for ix <- 0..3 do
+        assert %{props: %{text: "Human"}} = find(view, :button, id: :"seat_type_#{ix}")
+      end
+
+      view = render_info(view, {:tap, {:seat_type, 1}})
+      assert %{props: %{text: "Bot · easy"}} = find(view, :button, id: :seat_type_1)
+
+      view = render_info(view, {:tap, {:seat_type, 1}})
+      assert %{props: %{text: "Bot · normal"}} = find(view, :button, id: :seat_type_1)
+
+      view = render_info(view, {:tap, {:seat_type, 1}})
+      assert %{props: %{text: "Human"}} = find(view, :button, id: :seat_type_1)
+    end
+
+    test "start plumbs the configured bot seats (and their default names)" do
+      view =
+        MenuScreen
+        |> mount_screen()
+        |> render_info({:tap, {:seat_type, 1}})
+        |> render_info({:tap, {:seat_type, 2}})
+        |> render_info({:tap, {:seat_type, 2}})
+        |> render_info({:change, {:name, 2}, "Asha"})
+        |> render_info({:tap, :start})
+
+      assert navigated_to(view) == GameScreen
+
+      %{setup: setup, bots: bots} = pushed_params(view)
+      assert bots == %{1 => Chopaat.Bot.Random, 2 => Chopaat.Bot.Heuristic}
+
+      names = Enum.map(setup.players, & &1.name)
+      # A typed name wins; an unnamed bot seat self-identifies.
+      assert names == ["Player 1", "Bot 2", "Asha", "Player 4"]
+    end
+
+    test "AUTO makes every seat a normal bot and starts the game" do
+      view =
+        MenuScreen
+        |> mount_screen()
+        |> render_info({:tap, {:players, 6}})
+        |> render_info({:tap, :auto})
+
+      assert navigated_to(view) == GameScreen
+
+      %{setup: setup, bots: bots} = pushed_params(view)
+      assert bots == Map.new(0..5, &{&1, Chopaat.Bot.Heuristic})
+      assert setup.num_players == 6
+      assert Enum.map(setup.players, & &1.name) == Enum.map(1..6, &"Bot #{&1}")
+
+      # The preset persists in the chips for the next visit to the menu.
+      assert %{props: %{text: "Bot · normal"}} = find(view, :button, id: :seat_type_0)
+    end
   end
 end

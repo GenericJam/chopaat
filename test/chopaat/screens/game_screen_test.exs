@@ -49,6 +49,21 @@ defmodule Chopaat.Screens.GameScreenTest do
         game -> Map.put(params, :game, game)
       end
 
+    params =
+      case Keyword.get(opts, :bots) do
+        nil ->
+          params
+
+        bots ->
+          # Real runners under a real supervisor, but frozen (an hour of
+          # delay): these tests assert the spectator HUD and plumbing —
+          # the runner's own behavior is covered headless in
+          # Chopaat.BotRunnerTest.
+          params
+          |> Map.put(:bots, bots)
+          |> Map.put(:bot_delay_ms, Keyword.get(opts, :bot_delay_ms, 3_600_000))
+      end
+
     mount_screen(GameScreen, params)
   end
 
@@ -455,6 +470,125 @@ defmodule Chopaat.Screens.GameScreenTest do
       view = drive(view, {:animation_done, play_id(view)})
 
       assert assigns(view).settle.skipped == 1
+    end
+  end
+
+  describe "bot seats — the spectator screen (bead chopaat-27z)" do
+    @all_bots Map.new(0..3, &{&1, Chopaat.Bot.Heuristic})
+
+    test "a bot's rolling turn shows the tray and turn owner but no throw button" do
+      view = mount_game(bots: %{0 => Chopaat.Bot.Heuristic})
+
+      assert_renderable(view)
+      assert is_pid(assigns(view).bot_sup)
+      refute find(view, :button, id: :throw)
+      assert find(view, :text, id: :bot_marker)
+      assert %{props: %{text: hint}} = find(view, :text, id: :bot_hint)
+      assert hint =~ "is throwing"
+    end
+
+    test "a bot's assigning turn lists no action buttons" do
+      view = mount_game(game: Fixtures.simple_move([4]), bots: %{0 => Chopaat.Bot.Heuristic})
+
+      assert find(view, :text, id: :pending_tray)
+      refute find(view, :button, id: :action_0)
+      assert %{props: %{text: hint}} = find(view, :text, id: :bot_hint)
+      assert hint =~ "is choosing"
+    end
+
+    test "a human turn keeps its inputs even with bot seats present" do
+      view = mount_game(game: Fixtures.simple_move([4]), bots: %{1 => Chopaat.Bot.Random})
+
+      assert find(view, :button, id: :action_0)
+      refute find(view, :text, id: :bot_marker)
+    end
+
+    test "stray taps during a bot's turn are inert" do
+      view = mount_game(game: Fixtures.simple_move([4]), bots: %{0 => Chopaat.Bot.Heuristic})
+      session = assigns(view).session
+
+      view = view |> drive({:tap, {:action, {:assign, 0, 0}}}) |> drive({:tap, :throw})
+
+      assert Chopaat.Session.observe(session).seq == 0
+      assert assigns(view).game.pending == [4]
+    end
+
+    test "turn handoff to a bot seat skips the pass-the-device prompt" do
+      view = mount_game(bots: %{1 => Chopaat.Bot.Random})
+      session = assigns(view).session
+
+      event = {:turn_passed, %{seat: 0, next_seat: 1, extra_turn: false}}
+      view = render_info(view, {:chopaat_session, session, 1, event})
+
+      assert assigns(view).handoff == nil
+      refute text(view) =~ "Pass the device"
+    end
+
+    test "turn handoff to a human still prompts in a mixed game" do
+      view = mount_game(bots: %{0 => Chopaat.Bot.Random})
+      session = assigns(view).session
+
+      event = {:turn_passed, %{seat: 0, next_seat: 1, extra_turn: false}}
+      view = render_info(view, {:chopaat_session, session, 1, event})
+
+      assert assigns(view).handoff == %{player: 1}
+      assert text(view) =~ "Pass the device"
+    end
+  end
+
+  describe "rematch and the auto-loop (bead chopaat-27z)" do
+    test "game over offers a rematch: fresh game, same seats, fresh shells" do
+      view = mount_game(game: Fixtures.finished())
+      before_seed = assigns(view).setup.seed
+
+      assert find(view, :button, id: :rematch)
+      view = drive(view, {:tap, :rematch})
+
+      assert assigns(view).game.phase == :rolling
+      assert assigns(view).game.placements == []
+      # The cosmetic shell set reshuffles (same seats, new seed).
+      refute assigns(view).setup.seed == before_seed
+      assert [_p1, _p2, _p3, _p4] = assigns(view).setup.players
+    end
+
+    test "the auto-loop toggle appears only in full-auto games" do
+      human_view = mount_game(game: Fixtures.finished())
+      refute find(human_view, :button, id: :auto_loop_toggle)
+
+      mixed_view = mount_game(game: Fixtures.finished(), bots: %{0 => Chopaat.Bot.Random})
+      refute find(mixed_view, :button, id: :auto_loop_toggle)
+
+      auto_view = mount_game(game: Fixtures.finished(), bots: @all_bots)
+
+      assert %{props: %{text: "Auto-rematch: off"}} =
+               find(auto_view, :button, id: :auto_loop_toggle)
+    end
+
+    test "with the loop ON a finished game schedules and fires its own rematch" do
+      view = mount_game(game: Fixtures.finished(), bots: @all_bots)
+      view = render_info(view, {:tap, :auto_loop_toggle})
+      assert assigns(view).auto_loop == true
+
+      # The session announces game over; the screen books the rematch.
+      session = assigns(view).session
+      over = {:game_over, %{placements: [1, 2, 0, 3], loser: 3}}
+      view = render_info(view, {:chopaat_session, session, 1, over})
+
+      assert timer = assigns(view).rematch_timer
+      assert is_reference(timer)
+
+      # The timer fires: a fresh game starts (runners are frozen by the
+      # hour-long test delay, so the reset state holds still).
+      view = drive(view, {:auto_rematch, timer})
+      assert assigns(view).game.phase == :rolling
+      assert assigns(view).rematch_timer == nil
+    end
+
+    test "a stale auto-rematch timer is ignored" do
+      view = mount_game(game: Fixtures.finished(), bots: @all_bots)
+      view = drive(view, {:auto_rematch, make_ref()})
+
+      assert assigns(view).game.phase == :finished
     end
   end
 end

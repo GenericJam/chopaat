@@ -5,7 +5,9 @@ defmodule Chopaat.Screens.GameScreen2DTest do
   # are app-env / run-global seams.
   use Mob.ScreenCase, async: false
 
+  alias Chopaat.Bot
   alias Chopaat.Screens.GameScreen
+  alias Chopaat.Session
   alias Chopaat.Setup
   alias Chopaat.Support.Craft
   alias Chopaat.Support.Fixtures
@@ -38,6 +40,20 @@ defmodule Chopaat.Screens.GameScreen2DTest do
         game -> Map.put(params, :game, game)
       end
 
+    params =
+      case Keyword.get(opts, :bots) do
+        nil ->
+          params
+
+        bots ->
+          # Real runners under a real supervisor, frozen by default (an
+          # hour of delay) so spectator-HUD assertions hold still; the
+          # composition test runs them live with bot_delay_ms: 0.
+          params
+          |> Map.put(:bots, bots)
+          |> Map.put(:bot_delay_ms, Keyword.get(opts, :bot_delay_ms, 3_600_000))
+      end
+
     mount_screen(GameScreen, params)
   end
 
@@ -49,6 +65,22 @@ defmodule Chopaat.Screens.GameScreen2DTest do
         pump(render_info(view, message))
     after
       0 -> view
+    end
+  end
+
+  # Live bots act on their own cadence (delay 0): wait for each session
+  # event, render it, and assert the 2D invariant — the presentation is
+  # instant, so no tumble is ever in flight — at every step.
+  defp pump_until(view, done?) do
+    case done?.(assigns(view)) do
+      true ->
+        view
+
+      false ->
+        assert_receive {:chopaat_session, _session, _seq, _event} = message, 5_000
+        view = render_info(view, message)
+        assert assigns(view).throw == nil
+        pump_until(view, done?)
     end
   end
 
@@ -229,15 +261,20 @@ defmodule Chopaat.Screens.GameScreen2DTest do
   describe "mode toggle mid-game (the session-boundary acceptance proof)" do
     test "2D → 3D → 2D keeps the same session and the same game state" do
       ScriptedDice.script([2])
-      view = mount_game() |> drive({:tap, :throw})
+      # A (frozen) bot on seat 1: the mid-game toggle must also preserve
+      # the bot plumbing (composition with bead chopaat-27z).
+      view = mount_game(bots: %{1 => Bot.Random}) |> drive({:tap, :throw})
 
       session = assigns(view).session
+      bot_sup = assigns(view).bot_sup
+      assert is_pid(bot_sup)
       game = assigns(view).game
       assert game.pending == [2]
 
       view = drive(view, {:tap, :toggle_board_mode})
       assert assigns(view).mode == :board3d
       assert assigns(view).session == session
+      assert assigns(view).bot_sup == bot_sup
       assert assigns(view).game == game
       assert find(view, :native_view, id: :board)
       refute find(view, :column, id: :board2d)
@@ -248,6 +285,7 @@ defmodule Chopaat.Screens.GameScreen2DTest do
       view = drive(view, {:tap, :toggle_board_mode})
       assert assigns(view).mode == :board2d
       assert assigns(view).session == session
+      assert assigns(view).bot_sup == bot_sup
       assert assigns(view).game == game
       assert find(view, :column, id: :board2d)
       assert text(view) =~ "Pending: 2"
@@ -265,6 +303,76 @@ defmodule Chopaat.Screens.GameScreen2DTest do
       # The session had already advanced; 2D presents it immediately.
       assert assigns(view).game.pending == [2]
       assert find(view, :column, id: :board2d)
+    end
+  end
+
+  describe "auto mode on the 2D board (composition: beads chopaat-u8x × chopaat-27z)" do
+    @all_bots Map.new(0..3, &{&1, Bot.Heuristic})
+
+    test "a full-auto 2D game runs to a placement and game over on scripted draws" do
+      # Seats 1 and 2 already placed; seat 0's last pawn sits 4 short of
+      # home. The scripted 4 lets the runners finish unattended: seat 0's
+      # bot throws, assigns, places — the third placement ends the game.
+      game =
+        Craft.game()
+        |> Craft.tod(0)
+        |> Craft.pawns(0, [79, :home, :home, :home])
+        |> Craft.pawns(1, [:home, :home, :home, :home])
+        |> Craft.pawns(2, [:home, :home, :home, :home])
+
+      game = %{game | placements: [1, 2]}
+
+      ScriptedDice.script([4])
+      view = mount_game(game: game, bots: @all_bots, bot_delay_ms: 0)
+
+      # The mounted screen spectates on the grid: bot marker, no inputs.
+      assert find(view, :column, id: :board2d)
+      assert find(view, :text, id: :bot_marker)
+      refute find(view, :button, id: :throw)
+
+      view = pump_until(view, &(&1.game.phase == :finished))
+
+      # The bots played through the session and the grid presented every
+      # event instantly: no tumble mounted, no settle reads happened.
+      assert assigns(view).throw == nil
+      assert assigns(view).settle == %{ok: 0, mismatch: 0, skipped: 0, error: 0}
+      assert assigns(view).game.placements == [1, 2, 0, 3]
+
+      # The presented plain data is exactly the session's truth.
+      assert assigns(view).observed == Session.observe(assigns(view).session)
+
+      # The 2D game-over report carries the full-auto controls.
+      assert find(view, :button, id: :rematch)
+      assert find(view, :button, id: :auto_loop_toggle)
+    end
+
+    test "2D spectator taps are inert on a bot's turn" do
+      view = mount_game(game: Fixtures.simple_move([4]), bots: %{0 => Bot.Heuristic})
+      session = assigns(view).session
+
+      view =
+        view
+        |> drive({:tap, {:cell2d, "cell_t1_l2_r5"}})
+        |> drive({:tap, {:pawn2d, 0}})
+        |> drive({:tap, {:action, {:assign, 0, 0}}})
+        |> drive({:tap, :throw})
+
+      assert assigns(view).selected == nil
+      assert Session.observe(session).seq == 0
+      assert assigns(view).game.pending == [4]
+    end
+
+    test "rematch from the 2D game-over report starts a fresh game on the grid" do
+      view = mount_game(game: Fixtures.finished(), bots: @all_bots)
+
+      assert find(view, :button, id: :rematch)
+      view = drive(view, {:tap, :rematch})
+
+      assert assigns(view).mode == :board2d
+      assert assigns(view).game.phase == :rolling
+      assert assigns(view).game.placements == []
+      assert find(view, :column, id: :board2d)
+      assert assigns(view).observed == Session.observe(assigns(view).session)
     end
   end
 
