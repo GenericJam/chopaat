@@ -126,7 +126,15 @@ pub fn build(b: *std.Build) void {
         module_name,
         "-import-objc-header",
     });
-    swift_run.addArg(b.fmt("{s}/ios/MobDemo-Bridging-Header.h", .{mob_dir}));
+    // mob_scene3d host wiring (plugin manifest host_requirements): the
+    // project bridging header wraps mob's and adds the plugin's ObjC
+    // surface (MobScene3dView.h / MobScene3dRuntime.h); mob's header and
+    // the plugin headers resolve via the -Xcc -I clang-importer paths.
+    swift_run.addArg(b.fmt("{s}/Chopaat-Bridging-Header.h", .{project_ios_dir}));
+    swift_run.addArg("-Xcc");
+    swift_run.addArg(b.fmt("-I{s}/ios", .{mob_dir}));
+    swift_run.addArg("-Xcc");
+    swift_run.addArg(b.fmt("-I{s}/../deps/mob_scene3d/priv/native/ios", .{project_ios_dir}));
     swift_run.addArg("-I");
     swift_run.addArg(b.fmt("{s}/ios", .{mob_dir}));
     swift_run.addArgs(&.{ "-parse-as-library", "-wmo" });
@@ -273,6 +281,38 @@ pub fn build(b: *std.Build) void {
         installAndCollect(b, objects_step, &objs, obj_lp, b.fmt("{s}.o", .{spec.name}));
     }
 
+    // --- mob_scene3d Filament renderer (manifest host_requirements) ────────
+    // ObjC++ via xcrun Apple clang, C++17 as Filament requires; headers from
+    // the vendored release artifacts (ios/vendor/filament — populated by
+    // scripts/fetch_filament_ios.sh). No manifest key exists yet for
+    // ObjC++-with-vendored-includes (spike landmine 6), so the host owns
+    // this step.
+    {
+        const mm_run = b.addSystemCommand(&.{
+            "xcrun",
+            "-sdk",
+            "iphonesimulator",
+            "cc",
+            "-arch",
+            "arm64",
+            "-mios-simulator-version-min=17.0",
+            "-std=gnu++17",
+            "-Os",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-fobjc-arc",
+        });
+        mm_run.addArg(b.fmt("-I{s}/vendor/filament/include", .{project_ios_dir}));
+        mm_run.addArg(b.fmt("-isysroot{s}", .{sdkroot}));
+        mm_run.addArg("-c");
+        mm_run.addFileArg(.{ .cwd_relative = b.fmt(
+            "{s}/../deps/mob_scene3d/priv/native/ios/MobScene3dView.mm",
+            .{project_ios_dir},
+        ) });
+        mm_run.addArg("-o");
+        installAndCollect(b, objects_step, &objs, mm_run.addOutputFileArg("MobScene3dView.o"), "MobScene3dView.o");
+    }
+
     // --- Project-side C NIFs (auto-wired from mob.exs :static_nifs) ───────────
     // Same logic as build_device.zig. See that file for the full rationale.
     if (project_c_nifs.len > 0) {
@@ -369,6 +409,7 @@ pub fn build(b: *std.Build) void {
         .project_rust_libs = project_rust_libs,
         .plugin_static_libs = plugin_static_libs,
         .plugin_frameworks = plugin_frameworks,
+        .filament_lib_dir = b.fmt("{s}/vendor/filament/lib", .{project_ios_dir}),
         .objects = objs.items,
     });
 }
@@ -534,6 +575,9 @@ const LinkOptions = struct {
     // Plugin cpp_archive `.a` archives (comma-separated abs paths). Same link
     // shape as project_rust_libs. Empty if no cpp_archive plugin is active.
     plugin_static_libs: []const u8 = "",
+    // mob_scene3d host wiring: dir holding the vendored Filament
+    // xcframeworks. Empty = Filament not linked.
+    filament_lib_dir: []const u8 = "",
     // Plugin-contributed extra iOS frameworks (comma-separated).
     plugin_frameworks: []const u8 = "",
     objects: []const std.Build.LazyPath,
@@ -616,6 +660,28 @@ fn addLink(b: *std.Build, step: *std.Build.Step, opts: LinkOptions) void {
         while (ps_it.next()) |lib_path| {
             if (lib_path.len == 0) continue;
             const lp: std.Build.LazyPath = .{ .cwd_relative = lib_path };
+            run.addFileArg(lp);
+        }
+    }
+
+    // mob_scene3d host wiring: Filament static archives from the release
+    // xcframeworks' simulator slices. addFileArg so the cache key tracks
+    // archive contents. OTP's libzstd.a above already satisfies zstd
+    // symbols; Filament's is listed after it and only fills gaps. Metal /
+    // CoreVideo come from the plugin manifest via plugin_frameworks.
+    if (opts.filament_lib_dir.len > 0) {
+        const filament_libs = [_][]const u8{
+            "filament",      "backend",     "filabridge",  "filaflat",
+            "utils",         "geometry",    "smol-v",      "ibl",
+            "image",         "gltfio_core", "ktxreader",   "basis_transcoder",
+            "meshoptimizer", "dracodec",    "uberarchive", "uberzlib",
+            "stb",           "zstd",        "perfetto",    "abseil",
+        };
+        for (filament_libs) |lib| {
+            const lp: std.Build.LazyPath = .{ .cwd_relative = b.fmt(
+                "{s}/lib{s}.xcframework/ios-arm64_x86_64-simulator/lib{s}.a",
+                .{ opts.filament_lib_dir, lib, lib },
+            ) };
             run.addFileArg(lp);
         }
     }

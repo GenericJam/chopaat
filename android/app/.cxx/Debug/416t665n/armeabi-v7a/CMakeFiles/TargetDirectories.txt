@@ -1,0 +1,2 @@
+/Users/kevin/code/worktrees/chopaat-screens/android/app/.cxx/Debug/416t665n/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/kevin/code/worktrees/chopaat-screens/android/app/.cxx/Debug/416t665n/armeabi-v7a/CMakeFiles/rebuild_cache.dir

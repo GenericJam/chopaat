@@ -1,0 +1,1 @@
+/Users/kevin/code/worktrees/chopaat-screens/android/app/build/intermediates/cxx/Debug/416t665n/obj/armeabi-v7a

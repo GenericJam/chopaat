@@ -74,7 +74,9 @@ defmodule Chopaat.Scene do
 
   defp rig(num_players) do
     # Angled overhead framing; pulled back a step for the wider 6-arm board.
-    {height, dolly} = if num_players == 4, do: {0.72, 0.58}, else: {0.86, 0.70}
+    # Tuned against the pool-emulator screenshot (evidence/): the whole
+    # cross incl. base pads fits a 360x400 viewport.
+    {height, dolly} = if num_players == 4, do: {1.05, 0.78}, else: {1.2, 0.9}
 
     [
       %Entity{

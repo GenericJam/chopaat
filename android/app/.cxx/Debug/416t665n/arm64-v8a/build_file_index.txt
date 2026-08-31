@@ -1,0 +1,1 @@
+/Users/kevin/code/worktrees/chopaat-screens/android/app/src/main/jni/CMakeLists.txt

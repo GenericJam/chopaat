@@ -149,6 +149,14 @@ class MainActivity : ComponentActivity() {
         // io.mob.plugin.MobActivityAware. Must run before the BEAM starts.
         io.mob.plugin.MobPluginBootstrap.registerAll(this)
 
+        // WORKAROUND (mob_scene3d-q03, remove per chopaat-df3): the plugin
+        // manifest declares this composable under ui_components but Android
+        // has no codegen for it yet, so the host registers the mob_scene3d
+        // viewport by hand (s3d_spike precedent).
+        MobNativeViewRegistry.register("Mob_Scene3d_Viewport") { props, _send ->
+            io.mob.scene3d.MobScene3dViewport(props)
+        }
+
         // Forward launcher-supplied env vars into the BEAM process. Set BEFORE
         // nativeStartBeam below so the BEAM (and Mob.Dist in particular) sees
         // them when it reads getenv()/System.get_env/1.

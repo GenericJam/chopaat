@@ -30,3 +30,6 @@ android/build/
 ios/zig-out/
 ios/.zig-cache/
 keystore.properties
+
+# Vendored Filament artifacts (~100 MB; scripts/fetch_filament_ios.sh)
+ios/vendor/

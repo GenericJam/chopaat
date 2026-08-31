@@ -1,0 +1,28 @@
+{
+  "buildFiles": [
+    "/Users/kevin/code/worktrees/chopaat-screens/android/app/src/main/jni/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/kevin/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/kevin/code/worktrees/chopaat-screens/android/app/.cxx/Debug/416t665n/arm64-v8a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/kevin/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/kevin/code/worktrees/chopaat-screens/android/app/.cxx/Debug/416t665n/arm64-v8a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {},
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "/Users/kevin/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang.lld",
+      "cppCompilerExecutable": "/Users/kevin/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++.lld"
+    }
+  },
+  "cFileExtensions": [],
+  "cppFileExtensions": []
+}

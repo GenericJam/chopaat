@@ -154,4 +154,9 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
+    // mob:plugin-deps BEGIN (managed — regenerated each build; do not edit)
+    implementation "com.google.android.filament:filament-android:1.75.1"
+    implementation "com.google.android.filament:gltfio-android:1.75.1"
+    implementation "com.google.android.filament:filament-utils-android:1.75.1"
+    // mob:plugin-deps END
 }
