@@ -1,0 +1,87 @@
+OK   connect to chopaat_ios_u8xios@127.0.0.1
+OK   Chopaat.Screens.Board2D loaded on device
+OK   game screen mounted in 2D
+OK   throw #1 presented instantly (2D)
+OK   presented snapshot == session observe (seq 1)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   throw #2 presented instantly (2D)
+OK   presented snapshot == session observe (seq 2)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   base pawn 0 selected via pad
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 3)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+EVIDENCE evidence/ios_sim_2d_midgame.png
+OK   pawn 0 selected via cell cell_t0_l1_r1
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 5)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #3 presented instantly (2D)
+OK   presented snapshot == session observe (seq 6)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   throw #4 presented instantly (2D)
+OK   presented snapshot == session observe (seq 7)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   base pawn 0 selected via pad
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 8)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   pawn 0 selected via cell cell_t1_l1_r1
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 10)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #5 presented instantly (2D)
+OK   presented snapshot == session observe (seq 11)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   throw #6 presented instantly (2D)
+OK   presented snapshot == session observe (seq 12)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   base pawn 0 selected via pad
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 13)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   pawn 0 selected via cell cell_t2_l1_r1
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 15)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #7 presented instantly (2D)
+OK   presented snapshot == session observe (seq 16)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #8 presented instantly (2D)
+OK   presented snapshot == session observe (seq 19)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   pawn 0 selected via cell cell_t0_l1_r3
+OK   move committed from board tap ({:assign, 0, 0})
+OK   presented snapshot == session observe (seq 21)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   handoff dismissed
+OK   throw #9 presented instantly (2D)
+OK   presented snapshot == session observe (seq 22)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+OK   throw #10 presented instantly (2D)
+OK   presented snapshot == session observe (seq 23)
+OK   no scene3d viewport in the 2D tree
+OK   2D grid present
+EVIDENCE evidence/ios_sim_2d_endgame.png
+
+2D ACCEPTANCE PASS: throws=10 moves=7 (all in 2D)
