@@ -72,6 +72,11 @@ defmodule Chopaat.Scene do
       lifts that pawn emissively and adds the `"target_*"` markers.
     * `:move` — `%Chopaat.Scene.Move{}` in flight; overrides that entity's
       transform with `Move.transform/2` evaluated at `:move_now` ms.
+    * `:camera_yaw` — the camera's orbit yaw in degrees (bead chopaat-4g7,
+      `Chopaat.Scene.Orbit`): the rig rotated about the board's vertical
+      axis so the active seat's arm sits at the bottom of the screen.
+      Elevation, distance and pitch stay the tuned values. Default `0.0`
+      — seat 0's frame, the original rig.
   """
   @spec build(Game.t(), Setup.t(), keyword()) :: IR.t()
   def build(%Game{} = game, %Setup{} = setup, opts \\ []) do
@@ -81,9 +86,10 @@ defmodule Chopaat.Scene do
     selected = Keyword.get(opts, :selected)
     move = Keyword.get(opts, :move)
     move_now = Keyword.get(opts, :move_now, 0)
+    camera_yaw = Keyword.get(opts, :camera_yaw, 0.0)
 
     IR.new(
-      rig(game.num_players) ++
+      rig(game.num_players, camera_yaw) ++
         [board_entity(board)] ++
         pawn_entities(game, setup, board, selected, move, move_now) ++
         target_entities(game, setup, board, selected, move) ++
@@ -92,16 +98,26 @@ defmodule Chopaat.Scene do
     )
   end
 
-  defp rig(num_players) do
+  @camera_pitch_deg -52.0
+
+  defp rig(num_players, camera_yaw) do
     # Angled overhead framing; pulled back a step for the wider 6-arm board.
     # Tuned against the pool-emulator screenshot (evidence/): the whole
-    # cross incl. base pads fits a 360x400 viewport.
+    # cross incl. base pads fits a 360x400 viewport. The per-turn orbit
+    # (chopaat-4g7) rotates this rig about the board's vertical axis —
+    # position on the same circle, yaw-then-pitch orientation — so every
+    # seat gets the identical tuned framing of its own arm. The tumble
+    # entry margin is re-verified against every seat yaw by gate.mjs.
     {height, dolly} = if num_players == 4, do: {1.05, 0.78}, else: {1.2, 0.9}
+    yaw_rad = camera_yaw * :math.pi() / 180.0
 
     [
       %Entity{
         id: "camera",
-        transform: Transform.from_euler({-52.0, 0.0, 0.0}, position: {0.0, height, dolly}),
+        transform: %Transform{
+          position: {dolly * :math.sin(yaw_rad), height, dolly * :math.cos(yaw_rad)},
+          rotation: camera_rotation(camera_yaw)
+        },
         data: %Camera{fov_y: 45.0, near: 0.05, far: 10.0}
       },
       %Entity{
@@ -110,6 +126,19 @@ defmodule Chopaat.Scene do
         data: %Light{type: :directional, intensity: 100_000.0}
       }
     ]
+  end
+
+  # World yaw about +Y composed onto the tuned pitch: q_y(yaw) ⊗ q_x(pitch).
+  # `Transform.from_euler/2` composes X·Y·Z, which rolls the horizon when
+  # pitch and yaw are both set, so build the quaternion directly. At yaw 0
+  # this is exactly `from_euler({-52, 0, 0})` — the original rig.
+  defp camera_rotation(yaw_deg) do
+    half_yaw = yaw_deg * :math.pi() / 360.0
+    half_pitch = @camera_pitch_deg * :math.pi() / 360.0
+    {cy, sy} = {:math.cos(half_yaw), :math.sin(half_yaw)}
+    {cp, sp} = {:math.cos(half_pitch), :math.sin(half_pitch)}
+
+    {cy * sp, sy * cp, 0.0 - sy * sp, cy * cp}
   end
 
   defp board_entity(board), do: %Entity{id: "board", data: %Model{asset: board}}

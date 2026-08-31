@@ -193,6 +193,12 @@ defmodule Chopaat.Screens.GameScreen2DTest do
 
       view = drive(view, {:tap, :handoff_done})
       assert find(view, :column, id: :board2d)
+
+      # 2D never orbits — the 3D camera yaw snaps to the new seat so the
+      # rig is right whenever the board toggles back (bead chopaat-4g7),
+      # and input is never orbit-locked.
+      assert assigns(view).orbit == nil
+      assert assigns(view).camera_yaw == 90.0
     end
 
     test "a base pad tap selects for unlocking; the launch cell is the target" do

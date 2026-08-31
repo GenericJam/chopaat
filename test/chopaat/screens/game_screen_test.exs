@@ -11,6 +11,7 @@ defmodule Chopaat.Screens.GameScreenTest do
   alias Chopaat.Game
   alias Chopaat.Scene.BoardMap
   alias Chopaat.Scene.Move
+  alias Chopaat.Scene.Orbit
   alias Chopaat.Screens.GameScreen
   alias Chopaat.Setup
   alias Chopaat.Support.Craft
@@ -94,6 +95,23 @@ defmodule Chopaat.Screens.GameScreenTest do
         assert_receive {:move_tick, ^ref}, 500
         view |> render_info({:move_tick, ref}) |> settle_move()
     end
+  end
+
+  # Drives {:orbit_tick, ref} self-messages until the camera orbit lands.
+  defp settle_orbit(view) do
+    case assigns(view).orbit do
+      nil ->
+        view
+
+      %Orbit{ref: ref} ->
+        assert_receive {:orbit_tick, ^ref}, 500
+        view |> render_info({:orbit_tick, ref}) |> settle_orbit()
+    end
+  end
+
+  defp camera(view) do
+    {:ok, entity} = IR.fetch(assigns(view).scene, "camera")
+    entity.transform
   end
 
   describe "mounting" do
@@ -470,6 +488,143 @@ defmodule Chopaat.Screens.GameScreenTest do
       view = drive(view, {:animation_done, play_id(view)})
 
       assert assigns(view).settle.skipped == 1
+    end
+  end
+
+  describe "per-turn camera orbit (bead chopaat-4g7)" do
+    setup do
+      # Short real-time orbits: the tests drive the same {:orbit_tick, _}
+      # self-messages the device sees, just fewer of them.
+      Application.put_env(:chopaat, :orbit_ms, 120)
+      on_exit(fn -> Application.delete_env(:chopaat, :orbit_ms) end)
+      :ok
+    end
+
+    test "the scene camera mounts framing the active seat" do
+      view = mount_game(game: %{Craft.game() | turn: 2})
+
+      assert assigns(view).camera_yaw == 180.0
+      assert assigns(view).orbit == nil
+
+      %{position: {x, y, z}} = camera(view)
+      assert_in_delta x, 0.0, 1.0e-9
+      assert_in_delta y, 1.05, 1.0e-9
+      assert_in_delta z, -0.78, 1.0e-9
+    end
+
+    test "the orbit waits for the handoff confirm, then locks input until it lands" do
+      view = mount_game(game: Fixtures.simple_move([4]))
+
+      action = hd(Game.legal_actions(assigns(view).game))
+      view = view |> drive({:tap, {:action, action}}) |> settle_move()
+
+      # Handoff prompt up: the camera has NOT moved yet — the outgoing
+      # player still sees their own frame until the phone changes hands.
+      assert assigns(view).handoff == %{player: 1}
+      assert assigns(view).orbit == nil
+      assert assigns(view).camera_yaw == 0.0
+
+      view = drive(view, {:tap, :handoff_done})
+      assert %Orbit{} = assigns(view).orbit
+      session = assigns(view).session
+      seq = Chopaat.Session.observe(session).seq
+
+      # Mid-orbit input is locked: throw taps and picks are inert.
+      view = view |> drive({:tap, :throw}) |> drive({:pawn_picked, "pawn_1_0"})
+      assert Chopaat.Session.observe(session).seq == seq
+      assert assigns(view).throw == nil
+      assert assigns(view).selected == nil
+
+      view = settle_orbit(view)
+      assert assigns(view).orbit == nil
+      assert assigns(view).camera_yaw == 90.0
+
+      # Seat 1's frame: same tuned rig, orbited a quarter turn.
+      %{position: {x, y, z}} = camera(view)
+      assert_in_delta x, 0.78, 1.0e-9
+      assert_in_delta y, 1.05, 1.0e-9
+      assert_in_delta z, 0.0, 1.0e-9
+
+      # Input unlocks once the orbit lands.
+      ScriptedDice.script([2])
+      view = drive(view, {:tap, :throw})
+      assert %{shells: _in_flight} = assigns(view).throw
+    end
+
+    test "the in-flight orbit eases the scene camera frame by frame" do
+      # An orbit far longer than a tick, so the frame under assertion is
+      # deterministically mid-flight even on a slow scheduler.
+      Application.put_env(:chopaat, :orbit_ms, 60_000)
+      view = mount_game(game: Fixtures.simple_move([4]))
+
+      action = hd(Game.legal_actions(assigns(view).game))
+
+      view =
+        view |> drive({:tap, {:action, action}}) |> settle_move() |> drive({:tap, :handoff_done})
+
+      assert %Orbit{ref: ref} = assigns(view).orbit
+      assert_receive {:orbit_tick, ^ref}, 500
+      view = render_info(view, {:orbit_tick, ref})
+
+      # A frame in: the camera has left seat 0 but not reached seat 1,
+      # still on the tuned circle.
+      yaw = assigns(view).camera_yaw
+      assert yaw > 0.0 and yaw < 90.0
+      %{position: {x, y, z}} = camera(view)
+      assert_in_delta :math.sqrt(x * x + z * z), 0.78, 1.0e-9
+      assert_in_delta y, 1.05, 1.0e-9
+    end
+
+    test "a bot's turn orbits immediately — no prompt, spectate pacing" do
+      view =
+        mount_game(game: Fixtures.simple_move([4]), bots: %{1 => Chopaat.Bot.Random})
+
+      action = hd(Game.legal_actions(assigns(view).game))
+      view = drive(view, {:tap, {:action, action}})
+
+      # Turn passed to the bot: no pass-the-device prompt, the camera is
+      # already swinging to the bot's seat while the move lands.
+      assert assigns(view).handoff == nil
+      assert %Orbit{} = assigns(view).orbit
+
+      view = view |> settle_move() |> settle_orbit()
+      assert assigns(view).camera_yaw == 90.0
+    end
+
+    test "an extra turn keeps the seat and the frame — no orbit" do
+      view = mount_game(game: Fixtures.capture_ready())
+      view = view |> drive({:tap, {:action, {:assign, 0, 0}}}) |> settle_move()
+
+      assert assigns(view).game.turn == 0
+      assert assigns(view).orbit == nil
+      assert assigns(view).camera_yaw == 0.0
+    end
+
+    test "a rematch snaps the camera to the fresh game's opening seat" do
+      view = mount_game(game: %{Fixtures.finished() | turn: 2})
+      assert assigns(view).camera_yaw == 180.0
+
+      view = drive(view, {:tap, :rematch})
+
+      assert assigns(view).game.turn == 0
+      assert assigns(view).orbit == nil
+      assert assigns(view).camera_yaw == 0.0
+    end
+
+    test "toggling the board mode drops an in-flight orbit with a snap" do
+      view = mount_game(game: Fixtures.simple_move([4]))
+
+      action = hd(Game.legal_actions(assigns(view).game))
+
+      view =
+        view |> drive({:tap, {:action, action}}) |> settle_move() |> drive({:tap, :handoff_done})
+
+      assert %Orbit{} = assigns(view).orbit
+
+      view = drive(view, {:tap, :toggle_board_mode})
+      assert assigns(view).mode == :board2d
+      assert assigns(view).orbit == nil
+      assert assigns(view).camera_yaw == 90.0
     end
   end
 

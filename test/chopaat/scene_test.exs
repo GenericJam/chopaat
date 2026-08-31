@@ -269,4 +269,64 @@ defmodule Chopaat.SceneTest do
       assert positions == expected
     end
   end
+
+  describe "camera orbit (bead chopaat-4g7)" do
+    # Rotates a vector by a {x, y, z, w} quaternion (v' = q v q⁻¹).
+    defp rotate({qx, qy, qz, qw}, {vx, vy, vz}) do
+      {tx, ty, tz} = {2 * (qy * vz - qz * vy), 2 * (qz * vx - qx * vz), 2 * (qx * vy - qy * vx)}
+
+      {
+        vx + qw * tx + qy * tz - qz * ty,
+        vy + qw * ty + qz * tx - qx * tz,
+        vz + qw * tz + qx * ty - qy * tx
+      }
+    end
+
+    defp camera(ir) do
+      {:ok, entity} = IR.fetch(ir, "camera")
+      entity.transform
+    end
+
+    test "the default yaw 0 is exactly the original tuned rig" do
+      %Transform{} = transform = camera(scene(Game.new(4)))
+
+      assert transform.position == {0.0, 1.05, 0.78}
+      assert transform.rotation == Transform.from_euler({-52.0, 0.0, 0.0}).rotation
+    end
+
+    test "yaw 90 (4p seat 1) moves the camera to that seat's side, same framing" do
+      %Transform{position: {x, y, z}} = camera(scene(Game.new(4), camera_yaw: 90.0))
+
+      assert_in_delta x, 0.78, 1.0e-9
+      assert_in_delta y, 1.05, 1.0e-9
+      assert_in_delta z, 0.0, 1.0e-9
+    end
+
+    test "every seat yaw preserves the tuned elevation, distance and pitch — no roll" do
+      for {players, height, dolly} <- [{4, 1.05, 0.78}, {6, 1.2, 0.9}],
+          seat <- 0..(players - 1) do
+        yaw = Chopaat.Scene.Orbit.seat_yaw(players, seat)
+
+        %Transform{position: {x, y, z}, rotation: rotation} =
+          camera(scene(Game.new(players), camera_yaw: yaw))
+
+        # Same circle: tuned height, tuned distance from the board axis.
+        assert_in_delta y, height, 1.0e-9
+        assert_in_delta :math.sqrt(x * x + z * z), dolly, 1.0e-9
+
+        # The camera looks at the board center at the tuned -52° pitch:
+        # forward's horizontal part points from the camera to the axis,
+        # its vertical part is -sin(52°), and up has no sideways lean.
+        {fx, fy, fz} = rotate(rotation, {0.0, 0.0, -1.0})
+        assert_in_delta fy, -:math.sin(52.0 * :math.pi() / 180.0), 1.0e-9
+        horizontal = :math.sqrt(fx * fx + fz * fz)
+        assert_in_delta fx / horizontal, -x / dolly, 1.0e-9
+        assert_in_delta fz / horizontal, -z / dolly, 1.0e-9
+
+        # No roll: the camera's right axis stays level.
+        {_rx, ry, _rz} = rotate(rotation, {1.0, 0.0, 0.0})
+        assert_in_delta ry, 0.0, 1.0e-9
+      end
+    end
+  end
 end

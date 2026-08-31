@@ -1,0 +1,71 @@
+OK   connect to chopaat@127.0.0.1
+screen host: Chopaat.Screens.GameScreen
+
+== 4p leg — 4 handoffs, one per seat ==
+OK   4p mounts at seat-0 yaw 0.0
+OK   4p mount: camera world_transform present in scene/1 readback
+OK   4p mount: native camera matches Scene.build at yaw 0.0 (pos Δ 0.0, basis Δ 0.0)
+recording two consecutive handoffs (adb ZY22DP6HFL)...
+OK   4p handoff #1: camera still at the outgoing seat's yaw 0.0 while the prompt is up
+OK   4p handoff #1: orbit observed in flight (17 mid-swing samples) before landing at yaw 90.0
+OK   4p handoff #1: orbit landed at seat 1 yaw 90.0
+OK   4p seat 1: camera world_transform present in scene/1 readback
+OK   4p seat 1: native camera matches Scene.build at yaw 90.0 (pos Δ 0.0, basis Δ 0.0)
+OK   4p handoff #2: camera still at the outgoing seat's yaw 90.0 while the prompt is up
+OK   4p handoff #2: orbit observed in flight (17 mid-swing samples) before landing at yaw 180.0
+OK   4p handoff #2: orbit landed at seat 2 yaw 180.0
+OK   4p seat 2: camera world_transform present in scene/1 readback
+OK   4p seat 2: native camera matches Scene.build at yaw 180.0 (pos Δ 0.0, basis Δ 0.0)
+/data/local/tmp/chopaat_orbit.mp4: 1 file pulled, 0 skipped. 34.7 MB/s (4686881 bytes in 0.129s)
+recorded 2 consecutive handoffs → evidence/android_moto_orbit_handoffs.mp4
+OK   4p handoff #3: camera still at the outgoing seat's yaw 180.0 while the prompt is up
+OK   4p handoff #3: orbit observed in flight (18 mid-swing samples) before landing at yaw 270.0
+OK   4p handoff #3: orbit landed at seat 3 yaw 270.0
+OK   4p seat 3: camera world_transform present in scene/1 readback
+OK   4p seat 3: native camera matches Scene.build at yaw 270.0 (pos Δ 0.0, basis Δ 0.0)
+OK   4p handoff #4: camera still at the outgoing seat's yaw 270.0 while the prompt is up
+OK   4p handoff #4: orbit observed in flight (18 mid-swing samples) before landing at yaw 0.0
+OK   4p handoff #4: orbit landed at seat 0 yaw 0.0
+OK   4p seat 0: camera world_transform present in scene/1 readback
+OK   4p seat 0: native camera matches Scene.build at yaw 0.0 (pos Δ 0.0, basis Δ 0.0)
+OK   4p throw settle verdicts stayed clean under orbited cameras (%{error: 0, ok: 6, mismatch: 0, skipped: 0}, throws 6)
+4p leg done: 4 handoffs, 6 throws, 6 actions, 70 mid-orbit samples
+
+== 6p leg — 6 handoffs, one per seat ==
+OK   6p mounts at seat-0 yaw 0.0
+OK   6p mount: camera world_transform present in scene/1 readback
+OK   6p mount: native camera matches Scene.build at yaw 0.0 (pos Δ 0.0, basis Δ 0.0)
+OK   6p handoff #1: camera still at the outgoing seat's yaw 0.0 while the prompt is up
+OK   6p handoff #1: orbit observed in flight (18 mid-swing samples) before landing at yaw 60.0
+OK   6p handoff #1: orbit landed at seat 1 yaw 60.0
+OK   6p seat 1: camera world_transform present in scene/1 readback
+OK   6p seat 1: native camera matches Scene.build at yaw 60.0 (pos Δ 0.0, basis Δ 0.0)
+OK   6p handoff #2: camera still at the outgoing seat's yaw 60.0 while the prompt is up
+OK   6p handoff #2: orbit observed in flight (18 mid-swing samples) before landing at yaw 120.0
+OK   6p handoff #2: orbit landed at seat 2 yaw 120.0
+OK   6p seat 2: camera world_transform present in scene/1 readback
+OK   6p seat 2: native camera matches Scene.build at yaw 120.0 (pos Δ 0.0, basis Δ 0.0)
+OK   6p handoff #3: camera still at the outgoing seat's yaw 120.0 while the prompt is up
+OK   6p handoff #3: orbit observed in flight (17 mid-swing samples) before landing at yaw 180.0
+OK   6p handoff #3: orbit landed at seat 3 yaw 180.0
+OK   6p seat 3: camera world_transform present in scene/1 readback
+OK   6p seat 3: native camera matches Scene.build at yaw 180.0 (pos Δ 0.0, basis Δ 0.0)
+OK   6p handoff #4: camera still at the outgoing seat's yaw 180.0 while the prompt is up
+OK   6p handoff #4: orbit observed in flight (18 mid-swing samples) before landing at yaw 240.0
+OK   6p handoff #4: orbit landed at seat 4 yaw 240.0
+OK   6p seat 4: camera world_transform present in scene/1 readback
+OK   6p seat 4: native camera matches Scene.build at yaw 240.0 (pos Δ 0.0, basis Δ 0.0)
+OK   6p handoff #5: camera still at the outgoing seat's yaw 240.0 while the prompt is up
+OK   6p handoff #5: orbit observed in flight (18 mid-swing samples) before landing at yaw 300.0
+OK   6p handoff #5: orbit landed at seat 5 yaw 300.0
+OK   6p seat 5: camera world_transform present in scene/1 readback
+OK   6p seat 5: native camera matches Scene.build at yaw 300.0 (pos Δ 0.0, basis Δ 0.0)
+OK   6p handoff #6: camera still at the outgoing seat's yaw 300.0 while the prompt is up
+OK   6p handoff #6: orbit observed in flight (18 mid-swing samples) before landing at yaw 0.0
+OK   6p handoff #6: orbit landed at seat 0 yaw 0.0
+OK   6p seat 0: camera world_transform present in scene/1 readback
+OK   6p seat 0: native camera matches Scene.build at yaw 0.0 (pos Δ 0.0, basis Δ 0.0)
+OK   6p throw settle verdicts stayed clean under orbited cameras (%{error: 0, ok: 8, mismatch: 0, skipped: 0}, throws 8)
+6p leg done: 6 handoffs, 8 throws, 8 actions, 107 mid-orbit samples
+
+ALL ORBIT EVIDENCE CHECKS PASSED

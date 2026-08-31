@@ -28,7 +28,10 @@
  *     (chopaat-huv): the FIRST translation keyframe of every slot in every
  *     animation is re-derived the same way and must sit above the top
  *     frustum plane of BOTH game cameras (manifest `entry` params — the
- *     out-of-frame entry contract).
+ *     out-of-frame entry contract). Round 4 (chopaat-4g7): the per-turn
+ *     camera orbit made every seat yaw a real game camera, so the entry
+ *     check sweeps each rig through its seat angles (4p: 90° steps,
+ *     6p: 60° steps) — the spawn must clear the top plane at ALL of them.
  *
  * Budgets/bounds are read straight from the GLB JSON chunk (accessor
  * counts and POSITION min/max), so the gate needs no npm deps beyond
@@ -298,16 +301,24 @@ function gateTumbles() {
   // top frustum plane of every game camera in manifest.entry
   const entry = manifest.entry;
   if (!entry) failures.push("manifest missing the entry contract (chopaat-huv)");
+  // Per-turn orbit (chopaat-4g7): each rig's camera also lives at every
+  // seat yaw. Rotating the world point by -yaw about +Y is the same test
+  // as orbiting the camera by +yaw; the pitched camera's top frustum
+  // plane has no x component, so only the rotated z enters the check.
+  const seatYaws = { "4p": [0, 90, 180, 270], "6p": [0, 60, 120, 180, 240, 300] };
   const outOfFrameTop = (t) => {
     const wy = t[1] + entry.center_home_y_m - entry.clearance_m;
-    for (const cam of Object.values(entry.cameras)) {
+    for (const [rig, cam] of Object.entries(entry.cameras)) {
       const th = (cam.pitch_deg * Math.PI) / 180;
-      const vy = wy - cam.position[1];
-      const vz = t[2] - cam.position[2];
-      const yC = vy * Math.cos(th) + vz * Math.sin(th);
-      const depth = -(vy * -Math.sin(th) + vz * Math.cos(th));
       const tanHalf = Math.tan(((cam.fov_y_deg / 2) * Math.PI) / 180);
-      if (depth > 0 && yC <= tanHalf * depth) return false;
+      const vy = wy - cam.position[1];
+      for (const yawDeg of seatYaws[rig] ?? [0]) {
+        const a = (yawDeg * Math.PI) / 180;
+        const vz = t[0] * Math.sin(a) + t[2] * Math.cos(a) - cam.position[2];
+        const yC = vy * Math.cos(th) + vz * Math.sin(th);
+        const depth = -(vy * -Math.sin(th) + vz * Math.cos(th));
+        if (depth > 0 && yC <= tanHalf * depth) return false;
+      }
     }
     return true;
   };

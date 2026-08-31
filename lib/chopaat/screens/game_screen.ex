@@ -31,6 +31,21 @@ defmodule Chopaat.Screens.GameScreen do
   in-flight move animation lands, so the viewport survives the
   performance).
 
+  Per-turn camera orbit (bead chopaat-4g7): the 3D camera frames the
+  active seat — `Chopaat.Scene.Orbit` eases the rig's yaw to the seat's
+  angle (90° steps for 4p, 60° for 6p, shortest arc, ~800 ms) via
+  `{:orbit_tick, ref}` self-messages, the `Chopaat.Scene.Move` 30 Hz
+  pattern. Sequencing: the orbit starts when the handoff prompt is
+  confirmed (the new player is holding the phone) and input stays locked
+  until it lands; bot turns orbit too, right on `{:turn_passed, ...}` —
+  the runner's cadence (longer than the orbit) is the spectate pacing.
+  Extra turns keep the seat, so no orbit. The throw/tumble camera is the
+  orbited frame — the baked entry stays out-of-frame at every seat yaw
+  (gate.mjs re-verifies the margin for all 4p/6p seat angles). In 2D the
+  camera yaw snaps silently (the 3D rig just has to be right when the
+  board toggles back); rotating the 2D cross per seat is a separate owner
+  question, noted on the bead.
+
   Pick-to-move (bead chopaat-hre): `{:pawn_picked, id}` on a
   current-player pawn selects it and the scene grows pickable `"target_*"`
   markers on every legal landing (tapping one commits the action; khadu
@@ -89,6 +104,7 @@ defmodule Chopaat.Screens.GameScreen do
   alias Chopaat.Rules
   alias Chopaat.Scene
   alias Chopaat.Scene.Move
+  alias Chopaat.Scene.Orbit
   alias Chopaat.Screens.Board2D
   alias Chopaat.Session
   alias Chopaat.Setup
@@ -106,6 +122,7 @@ defmodule Chopaat.Screens.GameScreen do
     session = params[:session] || start_session(params)
     :ok = Session.subscribe(session)
     setup = Session.setup(session)
+    game = Session.game(session)
     {mode, notice} = resolve_mode(params[:mode] || :board3d)
     bots = params[:bots] || %{}
 
@@ -113,7 +130,7 @@ defmodule Chopaat.Screens.GameScreen do
       Mob.Socket.assign(socket,
         session: session,
         setup: setup,
-        game: Session.game(session),
+        game: game,
         observed: Session.observe(session),
         mode: mode,
         notice: notice,
@@ -134,6 +151,11 @@ defmodule Chopaat.Screens.GameScreen do
         banner: nil,
         selected: nil,
         move: nil,
+        # The camera opens on the mounted state's active seat — a
+        # mid-game mount (fixtures, external sessions) frames whoever's
+        # turn it is; a fresh game frames seat 0, the tuned rig.
+        camera_yaw: Orbit.seat_yaw(game.num_players, game.turn),
+        orbit: nil,
         settle: %{ok: 0, mismatch: 0, skipped: 0, error: 0},
         last_settle: nil
       )
@@ -197,9 +219,11 @@ defmodule Chopaat.Screens.GameScreen do
 
   @impl Mob.Screen
   def handle_info({:tap, :throw}, socket) do
-    %{game: game, throw: in_flight, handoff: handoff, move: move} = socket.assigns
+    %{game: game, throw: in_flight, handoff: handoff, move: move, orbit: orbit} = socket.assigns
 
-    idle? = game.phase == :rolling and is_nil(in_flight) and is_nil(handoff) and is_nil(move)
+    idle? =
+      game.phase == :rolling and is_nil(in_flight) and is_nil(handoff) and is_nil(move) and
+        is_nil(orbit)
 
     case idle? and not bot_turn?(socket.assigns) do
       false -> {:noreply, socket}
@@ -210,6 +234,12 @@ defmodule Chopaat.Screens.GameScreen do
   def handle_info({:tap, {:action, _action}}, %{assigns: %{move: move}} = socket)
       when not is_nil(move) do
     # A move performance is in flight; the tray re-renders when it lands.
+    {:noreply, socket}
+  end
+
+  def handle_info({:tap, {:action, _action}}, %{assigns: %{orbit: orbit}} = socket)
+      when not is_nil(orbit) do
+    # The camera is still orbiting to this seat — input unlocks when it lands.
     {:noreply, socket}
   end
 
@@ -249,6 +279,8 @@ defmodule Chopaat.Screens.GameScreen do
   # proof of the session boundary. Any in-flight 3D performance is
   # dropped in favor of the session's settled truth (2D is instant), and
   # a toggle back to 3D re-verifies support (falls back with the notice).
+  # An in-flight orbit is dropped the same way: the camera snaps to the
+  # active seat's yaw, so the 3D rig is right whenever it's next visible.
   def handle_info({:tap, :toggle_board_mode}, socket) do
     {mode, notice} =
       case socket.assigns.mode do
@@ -258,6 +290,7 @@ defmodule Chopaat.Screens.GameScreen do
 
     socket
     |> Mob.Socket.assign(mode: mode, notice: notice, throw: nil, move: nil)
+    |> snap_camera()
     |> adopt()
     |> then(&{:noreply, &1})
   end
@@ -331,8 +364,14 @@ defmodule Chopaat.Screens.GameScreen do
     end
   end
 
+  # Handoff confirmed — the new player is holding the phone; now the
+  # camera orbits to their seat (bead chopaat-4g7). Input stays locked
+  # until the orbit lands ({:orbit_tick, ref} drives it home).
   def handle_info({:tap, :handoff_done}, socket) do
-    {:noreply, Mob.Socket.assign(socket, :handoff, nil)}
+    case socket.assigns.handoff do
+      nil -> {:noreply, socket}
+      _handoff -> {:noreply, socket |> Mob.Socket.assign(:handoff, nil) |> orbit_to_turn()}
+    end
   end
 
   def handle_info({:tap, :back_to_menu}, socket) do
@@ -359,11 +398,43 @@ defmodule Chopaat.Screens.GameScreen do
   # ── pick-to-move ─────────────────────────────────────────────────────────
 
   def handle_info({:pawn_picked, entity_id}, socket) do
-    %{game: game, move: move, khadu: khadu, handoff: handoff} = socket.assigns
+    %{game: game, move: move, khadu: khadu, handoff: handoff, orbit: orbit} = socket.assigns
 
-    case is_nil(move) and is_nil(khadu) and is_nil(handoff) and not bot_turn?(socket.assigns) do
+    idle? = is_nil(move) and is_nil(khadu) and is_nil(handoff) and is_nil(orbit)
+
+    case idle? and not bot_turn?(socket.assigns) do
       false -> {:noreply, socket}
       true -> {:noreply, picked(socket, game, entity_id)}
+    end
+  end
+
+  # ── per-turn camera orbit (bead chopaat-4g7) ─────────────────────────────
+
+  def handle_info({:orbit_tick, ref}, socket) do
+    case socket.assigns.orbit do
+      %Orbit{ref: ^ref} = orbit ->
+        now = now_ms()
+
+        case Orbit.done?(orbit, now) do
+          true ->
+            # Landed: the settled yaw is the seat's exact angle, and the
+            # dropped orbit unlocks input.
+            socket
+            |> Mob.Socket.assign(orbit: nil, camera_yaw: Orbit.target(orbit))
+            |> rebuild_scene()
+            |> then(&{:noreply, &1})
+
+          false ->
+            Process.send_after(self(), {:orbit_tick, ref}, Orbit.tick_ms())
+
+            socket
+            |> Mob.Socket.assign(:camera_yaw, Orbit.yaw(orbit, now))
+            |> rebuild_scene(now)
+            |> then(&{:noreply, &1})
+        end
+
+      _stale_or_none ->
+        {:noreply, socket}
     end
   end
 
@@ -480,7 +551,10 @@ defmodule Chopaat.Screens.GameScreen do
       move: nil,
       rematch_timer: nil
     )
-    |> adopt()
+    # Sync first: the snap frames the NEW game's opening seat.
+    |> sync()
+    |> snap_camera()
+    |> rebuild_scene()
   end
 
   defp handle_event({:turn_passed, %{extra_turn: true}}, socket) do
@@ -492,10 +566,14 @@ defmodule Chopaat.Screens.GameScreen do
   defp handle_event({:turn_passed, %{next_seat: seat, extra_turn: false}}, socket) do
     case Map.has_key?(socket.assigns.bots, seat) do
       # A bot needs no device: skip the pass-and-play prompt and spectate.
+      # The camera still orbits to the bot's seat — the runner's cadence
+      # (longer than the orbit) is the spectate pacing, so the frame is
+      # settled before the bot's throw performs.
       true ->
         socket
         |> Mob.Socket.assign(banner: nil, last_shells: nil)
         |> adopt()
+        |> orbit_to_turn()
 
       false ->
         # The handoff prompt replaces the board — while a move performance
@@ -664,6 +742,39 @@ defmodule Chopaat.Screens.GameScreen do
     end
   end
 
+  # The per-turn orbit (bead chopaat-4g7): ease the camera to the active
+  # seat's yaw. 3D animates via {:orbit_tick, ref} self-messages (the
+  # Scene.Move 30 Hz pattern), starting from wherever the camera is right
+  # now (mid-orbit included — a superseding turn re-aims the same swing).
+  # 2D snaps: the 3D camera isn't visible there, it just has to be right
+  # when the board toggles back.
+  defp orbit_to_turn(%{assigns: %{mode: :board2d}} = socket) do
+    socket |> snap_camera() |> rebuild_scene()
+  end
+
+  defp orbit_to_turn(socket) do
+    %{game: game, camera_yaw: camera_yaw} = socket.assigns
+    target = Orbit.seat_yaw(game.num_players, game.turn)
+    duration = Application.get_env(:chopaat, :orbit_ms, Orbit.duration_ms())
+
+    case Orbit.new(camera_yaw, target, now_ms(), duration) do
+      # Already framing this seat (extra turn, rematch into the same
+      # seat): nothing to perform, input stays unlocked.
+      nil ->
+        socket |> Mob.Socket.assign(orbit: nil, camera_yaw: target) |> rebuild_scene()
+
+      orbit ->
+        Process.send_after(self(), {:orbit_tick, orbit.ref}, Orbit.tick_ms())
+        socket |> Mob.Socket.assign(orbit: orbit) |> rebuild_scene()
+    end
+  end
+
+  # Drop any in-flight orbit and park the camera on the active seat.
+  defp snap_camera(socket) do
+    game = socket.assigns.game
+    Mob.Socket.assign(socket, orbit: nil, camera_yaw: Orbit.seat_yaw(game.num_players, game.turn))
+  end
+
   defp rebuild_scene(socket, now \\ nil) do
     %{game: game, setup: setup, throw: throw, last_shells: last_shells} = socket.assigns
 
@@ -673,7 +784,8 @@ defmodule Chopaat.Screens.GameScreen do
         throw_animation: throw && throw.animation,
         selected: socket.assigns.selected,
         move: socket.assigns.move,
-        move_now: now || now_ms()
+        move_now: now || now_ms(),
+        camera_yaw: socket.assigns.camera_yaw
       )
 
     Mob.Socket.assign(socket, :scene, scene)
