@@ -23,6 +23,8 @@ node "$SCRIPTS/shell_pool.mjs"
 # within 0.001 (1 mm position / ~0.11 deg quaternion) — imperceptible
 npx --yes @gltf-transform/cli resample --tolerance 0.001 "$OUT/tumbles.glb" "$OUT/tumbles.glb"
 "$BLENDER" --background --python "$SCRIPTS/contact_sheet.py" -- "$SHEETS" "$OUT"
+"$BLENDER" --background --python "$SCRIPTS/colorblind_sim.py" -- "$SHEETS"
 "$BLENDER" --background --python "$SCRIPTS/tumble_preview.py" -- "$SHEETS" "$OUT"
+"$BLENDER" --background --python "$SCRIPTS/tumble_entry.py" -- "$SHEETS" "$OUT"
 
 node "$SCRIPTS/gate.mjs"

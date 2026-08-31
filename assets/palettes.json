@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "Player palettes for bead chopaat-xix (asset round 3). Colors are the",
+    "Okabe-Ito colorblind-safe set (Okabe & Ito 2008, 'Color Universal",
+    "Design'), chosen for distinguishability under deuteranopia and",
+    "protanopia AND for contrast against the dark cloth (board_cloth",
+    "linear albedo ~0.02). 4p keeps the traditional pachisi red/green/",
+    "yellow + blue for the fourth seat (traditional black is unreadable",
+    "on the dark cloth). Verified by assets/scripts/colorblind_sim.py:",
+    "Machado et al. 2009 severity-1.0 CVD matrices in linear RGB, min",
+    "pairwise CIE76 deltaE asserted per palette per condition; simulated",
+    "contact sheets rendered alongside the originals.",
+    "linear_rgba are the values the runtime override path should use for",
+    "the pawn_body baseColorFactor (glTF linear factor semantics) — the",
+    "lib/ Setup tint update is the chopaat-xix follow-up, not this lane."
+  ],
+  "accent": {
+    "name": "ivory",
+    "hex": "#EFDDB8",
+    "_comment": "authored in the asset (pawn_accent), never tinted"
+  },
+  "players_4": [
+    { "name": "vermillion", "hex": "#D55E00", "linear_rgba": [0.6654, 0.1119, 0.0, 1.0] },
+    { "name": "green", "hex": "#009E73", "linear_rgba": [0.0, 0.3419, 0.1714, 1.0] },
+    { "name": "yellow", "hex": "#F0E442", "linear_rgba": [0.8714, 0.7758, 0.0545, 1.0] },
+    { "name": "sky blue", "hex": "#56B4E9", "linear_rgba": [0.093, 0.4564, 0.8148, 1.0] }
+  ],
+  "players_6": [
+    { "name": "vermillion", "hex": "#D55E00", "linear_rgba": [0.6654, 0.1119, 0.0, 1.0] },
+    { "name": "green", "hex": "#009E73", "linear_rgba": [0.0, 0.3419, 0.1714, 1.0] },
+    { "name": "yellow", "hex": "#F0E442", "linear_rgba": [0.8714, 0.7758, 0.0545, 1.0] },
+    { "name": "sky blue", "hex": "#56B4E9", "linear_rgba": [0.093, 0.4564, 0.8148, 1.0] },
+    { "name": "blue", "hex": "#0072B2", "linear_rgba": [0.0, 0.1683, 0.4452, 1.0] },
+    { "name": "purple", "hex": "#CC79A7", "linear_rgba": [0.6038, 0.1912, 0.3865, 1.0] }
+  ]
+}

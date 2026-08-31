@@ -21,7 +21,21 @@ Pipeline (all in this script, headless):
     spins (kinematic-release launch — Blender inherits velocity from
     the two keyframed kinematic frames) onto a ground plane at the
     board's center-plate scale (3x3 cells of 0.05 m = 0.15 m; board.py
-    SQUARE). Simulate at 60 fps. NOTE: the sim runs on a clone of the
+    SQUARE). Simulate at 60 fps. ROUND 3 (bead chopaat-huv, owner
+    ruling 2026-08-31): shells ENTER FROM OUT OF FRAME (top) at the
+    ACTUAL game camera, both player counts. The sim itself is the
+    UNCHANGED approved round-2 throw (drop heights/impulses/damping
+    untouched — every honest high-energy variant was piloted and
+    rejected: a real 0.7 m drop arrives at ~2-4 m/s and Bullet exposes
+    no rolling friction, so shells roll off-plate >95% of attempts,
+    while ballistics forbids a slow arrival from a high start). The
+    entry is a BAKED PREPENDED SEGMENT built backward from each
+    shell's launch state: constant tumble, ENTRY_V_FALL fall easing
+    into the exact launch velocity over ENTRY_BRAKE_FRAMES (the splice
+    is C1-continuous), walked upward until above the top frustum plane
+    of BOTH game cameras (GAME_CAMERAS below) with margin. First-frame
+    out-of-frame-ness is asserted per take here AND re-derived from
+    the GLB binary by gate.mjs. NOTE: the sim runs on a clone of the
     proxy mesh shifted so the object origin sits at the volume
     centroid — Blender's Bullet integration treats the origin as the
     center of mass, and a center-bottom origin would make every shell
@@ -81,6 +95,55 @@ UP_TOL = 0.7  # |world-z of local +Z| must exceed this to classify
 SETTLE_POS_TOL = 0.0025  # m — max drift from the final rest position
 
 POOL_WINDOW = (0.023, 0.024)  # canonical extent window (shell_pool.json)
+
+# Throw presentation v1 (bead chopaat-huv): shells enter from OUT OF
+# FRAME (top) at the actual game camera. Framing copied from
+# lib/chopaat/scene.ex rig/1 (READ-ONLY — the app lane owns that file;
+# keep in sync). glTF world coords; the runtime places the tumbles
+# scene origin at the board's center-plate top surface (center_home,
+# glTF y = board.py SLAB_T + TILE_T).
+GAME_CAMERAS = {
+    "4p": {"position": (0.0, 1.05, 0.78), "pitch_deg": -52.0, "fov_y_deg": 45.0},
+    "6p": {"position": (0.0, 1.20, 0.90), "pitch_deg": -52.0, "fov_y_deg": 45.0},
+}
+CENTER_HOME_Y = 0.011  # m — glTF y of center_home above board origin
+ENTRY_TAN_MARGIN = 1.08  # entry start clears the top frustum plane by >= 8%
+ENTRY_CLEARANCE = 0.03  # m — clearance below the origin for shell extent
+ENTRY_V_FALL = 3.0  # m/s — entry fall speed above the brake window
+ENTRY_BRAKE_FRAMES = 8  # frames easing entry speed into the launch speed
+
+
+def blender_to_world(pos):
+    """Blender sim coords -> glTF world (tumbles origin at center_home):
+    (x, y, z) -> (x, CENTER_HOME_Y + z, -y)."""
+    return (pos[0], CENTER_HOME_Y + pos[2], -pos[1])
+
+
+def frustum_top_ratio(cam, world):
+    """(y_cam / -z_cam, -z_cam) of a glTF world point in camera space.
+    Out-of-frame-top iff y_cam > tan(fov_y/2) * -z_cam (for -z_cam > 0)."""
+    th = math.radians(cam["pitch_deg"])
+    up = (0.0, math.cos(th), math.sin(th))  # R_x(th) @ +Y
+    back = (0.0, -math.sin(th), math.cos(th))  # R_x(th) @ +Z
+    cx, cy, cz = cam["position"]
+    v = (world[0] - cx, world[1] - cy, world[2] - cz)
+    y_c = v[1] * up[1] + v[2] * up[2]
+    z_c = v[1] * back[1] + v[2] * back[2]
+    return y_c, -z_c
+
+
+def out_of_frame_top(blender_pos, margin=1.0):
+    """True iff the point (lowered by ENTRY_CLEARANCE for shell extent)
+    is above the top frustum plane of EVERY game camera."""
+    wx, wy, wz = blender_to_world(blender_pos)
+    world = (wx, wy - ENTRY_CLEARANCE, wz)
+    for cam in GAME_CAMERAS.values():
+        y_c, depth = frustum_top_ratio(cam, world)
+        tan_half = math.tan(math.radians(cam["fov_y_deg"]) / 2)
+        if depth > 0 and y_c <= tan_half * depth * margin:
+            return False
+    return True
+
 
 REPO = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
@@ -340,6 +403,37 @@ def build_sim_scene(proxy_geo, centroid_z, rng, target_up):
     return scene, shells
 
 
+def entry_from_launch(shell_samples):
+    """The out-of-frame entry (chopaat-huv), built BACKWARD from the
+    approved sim's launch state: constant tumble (the launch spin),
+    ENTRY_V_FALL descent easing into the exact launch velocity over
+    ENTRY_BRAKE_FRAMES — so the splice into the sim is C1-continuous —
+    walked upward until the shell clears the top frustum plane of both
+    game cameras with ENTRY_TAN_MARGIN. Returns frames spawn..pre-launch."""
+    dt = 1.0 / FPS
+    (p0, q0), (p1, q1) = shell_samples[0], shell_samples[1]
+    v0 = (p1 - p0) / dt
+    dq_inv = (q1 @ q0.inverted()).inverted()
+    frames = []
+    p, q = p0.copy(), q0.copy()
+    tau = 0
+    extra = 2  # frames past the margin so frames 1 AND 2 clear it
+    while extra > 0:
+        if tau >= ENTRY_BRAKE_FRAMES + 2 and out_of_frame_top(tuple(p), ENTRY_TAN_MARGIN):
+            extra -= 1
+        tau += 1
+        assert tau < 150, f"entry failed to leave frame (at {tuple(p)})"
+        t = min(tau / ENTRY_BRAKE_FRAMES, 1.0)
+        w = t * t * (3 - 2 * t)  # smoothstep: v == launch v at the splice
+        vz = v0.z + w * (-ENTRY_V_FALL - v0.z)
+        p = p - Vector((v0.x, v0.y, vz)) * dt
+        q = dq_inv @ q
+        q.normalize()
+        frames.append((p.copy(), q.copy()))
+    frames.reverse()
+    return frames
+
+
 def run_take(proxy_geo, centroid_z, seed, target_count):
     """One sim attempt. Returns (samples, aperture_up, end_frame) on
     acceptance, else (None, reason, None)."""
@@ -399,9 +493,15 @@ def run_take(proxy_geo, centroid_z, seed, target_count):
         if not stable:
             break
         settle = f
-    if settle + TAIL_FRAMES > MAX_FRAMES:
-        return None, f"not settled inside band (settle frame {settle})", None
-    end = max(settle + TAIL_FRAMES, MIN_FRAMES)
+
+    # out-of-frame entry (chopaat-huv): built per shell, padded to a
+    # common length with an out-of-frame hold so all slots share one
+    # frame range; the whole take (entry + sim) must fit the band
+    entries = [entry_from_launch(samples[i]) for i in range(SHELLS)]
+    n_entry = max(len(e) for e in entries)
+    if n_entry + settle + TAIL_FRAMES > MAX_FRAMES:
+        return None, f"not settled inside band (settle frame {settle} + entry {n_entry})", None
+    end = max(settle + TAIL_FRAMES, MIN_FRAMES - n_entry)
 
     # converge the tail onto the final pose = the simulated pose at `end`
     out = []
@@ -413,13 +513,25 @@ def run_take(proxy_geo, centroid_z, seed, target_count):
             w = t * t * (3 - 2 * t)  # smoothstep
             loc, quat = seq[f]
             seq[f] = (loc.lerp(hold_loc, w), quat.slerp(hold_quat, w))
+        hold = entries[i][0]
+        seq = [hold] * (n_entry - len(entries[i])) + entries[i] + seq
         out.append(seq)
+
+    # honest-harness: the first frames of the assembled take must sit
+    # above the top frustum plane of BOTH game cameras (gate.mjs
+    # re-derives this from the exported GLB binary)
+    for i in range(SHELLS):
+        for f in (0, 1):
+            loc = out[i][f][0]
+            assert out_of_frame_top(tuple(loc)), (
+                f"shell {i} frame {f + 1} in frame at a game camera: {tuple(loc)}"
+            )
 
     aperture_up = [cls == "aperture" for cls in final_class]
     count = sum(aperture_up)
     if count != target_count:
         return None, f"outcome {count} != target {target_count}", None
-    return out, aperture_up, end
+    return out, aperture_up, n_entry + end
 
 
 # --------------------------------------------------------------- export
@@ -570,6 +682,15 @@ def main(out_repo):
             "settle, scene readback must match aperture_up."
         ),
         "slots": [f"shell_{i}" for i in range(SHELLS)],
+        "entry": {
+            "style": "out_of_frame_top",
+            "cameras": GAME_CAMERAS,
+            "center_home_y_m": CENTER_HOME_Y,
+            "clearance_m": ENTRY_CLEARANCE,
+            "bake_tan_margin": ENTRY_TAN_MARGIN,
+            "fall_speed_mps": ENTRY_V_FALL,
+            "brake_frames": ENTRY_BRAKE_FRAMES,
+        },
         "fps": FPS,
         "duration_band_s": [MIN_FRAMES / FPS, MAX_FRAMES / FPS],
         "up_axis_tolerance": UP_TOL,

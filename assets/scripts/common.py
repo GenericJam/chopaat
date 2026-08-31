@@ -121,8 +121,11 @@ def decimate_to_budget(obj, max_tris):
     return triangle_count(obj)
 
 
-def export_glb(filepath):
-    """Export the whole current scene as a single .glb (embedded buffers, Y-up)."""
+def export_glb(filepath, export_tangents=False):
+    """Export the whole current scene as a single .glb (embedded buffers, Y-up).
+
+    export_tangents: emit TANGENT attributes — set by assets that ship a
+    normal map, so renderers need not synthesize tangent frames."""
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.export_scene.gltf(
         filepath=filepath,
@@ -130,6 +133,7 @@ def export_glb(filepath):
         export_yup=True,
         export_apply=True,
         export_animations=False,
+        export_tangents=export_tangents,
         export_extras=True,
     )
     print(f"[export] wrote {filepath}")
