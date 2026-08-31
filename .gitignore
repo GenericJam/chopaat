@@ -20,3 +20,13 @@ erl_crash.dump
 *.ez
 # Ignore package tarball (built via "mix hex.build").
 chopaat-*.tar
+
+# Mob local config + native build outputs (mob adoption)
+mob.exs
+android/local.properties
+android/.gradle/
+android/app/build/
+android/build/
+ios/zig-out/
+ios/.zig-cache/
+keystore.properties

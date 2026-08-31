@@ -1,0 +1,77 @@
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: test
+      MOB_SCENE3D_PATH: ${{ github.workspace }}/../mob_scene3d
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Tracks .tool-versions (erlang 29.0 / elixir 1.20.0-otp-29).
+          - elixir: '1.20'
+            otp: '29'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Cache deps + _build
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
+
+      # mob_scene3d is a path dep until its animation lane releases to hex
+      # (chopaat-hre pins the release); CI builds against its master.
+      - name: Clone mob_scene3d (path dep)
+        run: git clone --depth 1 https://github.com/GenericJam/mob_scene3d.git ../mob_scene3d
+
+      - run: mix deps.get
+      - run: mix deps.compile
+      - run: mix compile --warnings-as-errors
+
+      - name: Format check
+        run: mix format --check-formatted
+
+      - name: Credo (strict)
+        run: mix credo --strict
+
+      - name: Tests
+        run: mix test
+        timeout-minutes: 10
+
+  asset-gate:
+    name: Asset gate (glTF validator + budgets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+
+      # gate.mjs validates every priv/assets .glb (Khronos validator via
+      # @gltf-transform/cli), re-checks budgets, board node sets, the shell
+      # pool manifest, and the tumble manifest against the GLB.
+      - name: Asset gate
+        run: node assets/scripts/gate.mjs
