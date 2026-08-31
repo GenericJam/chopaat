@@ -21,7 +21,15 @@ defmodule Chopaat.Screens.GameScreenTest do
 
   setup do
     Application.put_env(:chopaat, :throws, ThrowsStub)
-    on_exit(fn -> Application.delete_env(:chopaat, :throws) end)
+    # These tests exercise the 3D client path; pin the support probe so
+    # the host BEAM (no scene3d native half) doesn't fall back to 2D.
+    Application.put_env(:chopaat, :scene3d_support, :supported)
+
+    on_exit(fn ->
+      Application.delete_env(:chopaat, :throws)
+      Application.delete_env(:chopaat, :scene3d_support)
+    end)
+
     :ok
   end
 

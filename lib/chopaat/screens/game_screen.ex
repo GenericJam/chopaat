@@ -37,15 +37,36 @@ defmodule Chopaat.Screens.GameScreen do
   targets route through the confirm dialog). Committed movement actions
   play as an eased per-cell hop (`Chopaat.Scene.Move`, `{:move_tick, ref}`
   self-messages) along the `{:moved, ...}` event's path.
+
+  Board modes (bead chopaat-u8x): the board viewport is the ONE thing
+  that swaps — `:board3d` (the scene3d viewport above) or `:board2d`
+  (`Chopaat.Screens.Board2D`, the always-playable grid drawn from
+  `Session.observe/1`). Everything else — session, HUD, khadu confirm,
+  handoff — is shared, which is the point: toggling mid-game
+  (`{:tap, :toggle_board_mode}`) keeps the same session and the same
+  assigns. When mob_scene3d reports unsupported
+  (`Board2D.scene3d_supported?/0`), a requested 3D board falls back to 2D
+  with a one-line notice. In 2D the throw and moves present instantly
+  (the shell glyphs flip to the drawn configuration — identical outcome
+  to the tumble by construction); selection taps arrive as
+  `{:cell2d, cell_name}` / `{:pawn2d, ix}` and target taps reuse the
+  tray's `{:action, action}` message, so khadu confirmation and legality
+  handling are literally the same code. The debug toggle
+  (`{:tap, :toggle_debug}`) overlays cell addresses on the 2D board and a
+  raw `seq · phase · last event` status line — the at-a-glance state
+  readout.
   """
 
   use Mob.Screen
 
   require Logger
 
+  alias Chopaat.Board
   alias Chopaat.Game
+  alias Chopaat.Rules
   alias Chopaat.Scene
   alias Chopaat.Scene.Move
+  alias Chopaat.Screens.Board2D
   alias Chopaat.Session
   alias Chopaat.Setup
   alias Chopaat.Throws
@@ -58,13 +79,23 @@ defmodule Chopaat.Screens.GameScreen do
   def mount(params, _session, socket) do
     session = params[:session] || start_session(params)
     :ok = Session.subscribe(session)
+    setup = Session.setup(session)
+    {mode, notice} = resolve_mode(params[:mode] || :board3d)
 
     socket =
       Mob.Socket.assign(socket,
         session: session,
-        setup: Session.setup(session),
+        setup: setup,
         game: Session.game(session),
+        observed: Session.observe(session),
+        mode: mode,
+        notice: notice,
+        debug: false,
+        tints: tints(setup),
         last_shells: nil,
+        last_throw: nil,
+        last_event: nil,
+        last_seq: nil,
         throw: nil,
         khadu: nil,
         handoff: nil,
@@ -77,6 +108,22 @@ defmodule Chopaat.Screens.GameScreen do
       )
 
     {:ok, rebuild_scene(socket)}
+  end
+
+  # A requested 3D board degrades to the always-playable 2D board when
+  # the scene3d native half is absent — with a one-line notice, never
+  # silently (bead chopaat-u8x).
+  defp resolve_mode(:board2d), do: {:board2d, nil}
+
+  defp resolve_mode(:board3d) do
+    case Board2D.scene3d_supported?() do
+      true -> {:board3d, nil}
+      false -> {:board2d, "3D board unsupported on this device — using the 2D board."}
+    end
+  end
+
+  defp tints(setup) do
+    Map.new(0..(setup.num_players - 1), &{&1, Setup.argb(Setup.player(setup, &1).tint)})
   end
 
   # A screen-owned session (pass-and-play): linked, so it lives and dies
@@ -135,12 +182,65 @@ defmodule Chopaat.Screens.GameScreen do
     {:noreply, Mob.Socket.assign(socket, :khadu, nil)}
   end
 
+  # ── board mode + debug (bead chopaat-u8x) ────────────────────────────────
+
+  # Mid-game toggle: same session, different client — the acceptance
+  # proof of the session boundary. Any in-flight 3D performance is
+  # dropped in favor of the session's settled truth (2D is instant), and
+  # a toggle back to 3D re-verifies support (falls back with the notice).
+  def handle_info({:tap, :toggle_board_mode}, socket) do
+    {mode, notice} =
+      case socket.assigns.mode do
+        :board2d -> resolve_mode(:board3d)
+        :board3d -> {:board2d, nil}
+      end
+
+    socket
+    |> Mob.Socket.assign(mode: mode, notice: notice, throw: nil, move: nil)
+    |> adopt()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_info({:tap, :toggle_debug}, socket) do
+    {:noreply, Mob.Socket.assign(socket, :debug, not socket.assigns.debug)}
+  end
+
+  # 2D selection: tapping a cell holding own pawns cycles through the
+  # stack (select first → next → … → deselect), mirroring pick-to-move.
+  def handle_info({:tap, {:cell2d, cell_name}}, socket) do
+    %{game: game, move: move, khadu: khadu, handoff: handoff} = socket.assigns
+
+    case is_nil(move) and is_nil(khadu) and is_nil(handoff) and game.phase == :assigning do
+      false -> {:noreply, socket}
+      true -> {:noreply, select_on_cell(socket, game, cell_name)}
+    end
+  end
+
+  # 2D base-pad pawn tap: plain toggle (one pawn per pad slot).
+  def handle_info({:tap, {:pawn2d, ix}}, socket) do
+    %{game: game, move: move, khadu: khadu, handoff: handoff, selected: selected} = socket.assigns
+
+    case is_nil(move) and is_nil(khadu) and is_nil(handoff) and game.phase == :assigning do
+      false ->
+        {:noreply, socket}
+
+      true ->
+        selected = if selected == ix, do: nil, else: ix
+        {:noreply, socket |> Mob.Socket.assign(:selected, selected) |> rebuild_scene()}
+    end
+  end
+
   # ── session events ───────────────────────────────────────────────────────
 
-  def handle_info({:chopaat_session, session, _seq, event}, socket) do
+  def handle_info({:chopaat_session, session, seq, event}, socket) do
     case socket.assigns.session == session do
-      true -> {:noreply, handle_event(event, socket)}
-      false -> {:noreply, socket}
+      true ->
+        # The raw feed the debug overlay reads: last event + its seq.
+        socket = Mob.Socket.assign(socket, last_event: event, last_seq: seq)
+        {:noreply, handle_event(event, socket)}
+
+      false ->
+        {:noreply, socket}
     end
   end
 
@@ -200,6 +300,21 @@ defmodule Chopaat.Screens.GameScreen do
 
   def handle_info(_message, socket), do: {:noreply, socket}
 
+  defp select_on_cell(socket, game, cell_name) do
+    ixes =
+      for {%{pos: {:track, x}}, ix} <- Enum.with_index(Map.fetch!(game.pawns, game.turn)),
+          Board.cell_name(Board.cell(game.board, game.turn, x)) == cell_name,
+          do: ix
+
+    selected =
+      case Enum.split_while(ixes, &(&1 != socket.assigns.selected)) do
+        {_miss, []} -> List.first(ixes)
+        {_hit, [_selected | rest]} -> List.first(rest)
+      end
+
+    socket |> Mob.Socket.assign(:selected, selected) |> rebuild_scene()
+  end
+
   # legal_actions drives the HUD, so a rejected command here is a stale
   # tap (double-fire) — the render already moved on. State flows back via
   # the subscription events either way.
@@ -212,6 +327,20 @@ defmodule Chopaat.Screens.GameScreen do
 
   # The tumble performs the session's decided outcome; the presented game
   # state stays put until the shells settle ({:animation_done, _}).
+  # The 2D presentation is instant by design (the shell glyphs flip to
+  # the drawn configuration — the manifest guarantees the outcome is
+  # identical to what the 3D tumble would settle on), so it adopts the
+  # session's truth immediately.
+  defp handle_event({:throw_result, result}, %{assigns: %{mode: :board2d}} = socket) do
+    socket
+    |> Mob.Socket.assign(
+      banner: nil,
+      last_shells: result.shells,
+      last_throw: %{shells: result.shells, score: result.score}
+    )
+    |> adopt()
+  end
+
   defp handle_event({:throw_result, result}, socket) do
     throw =
       result.up_count
@@ -221,9 +350,17 @@ defmodule Chopaat.Screens.GameScreen do
     Throws.schedule_done(self(), throw.animation.play_id)
 
     socket
-    |> Mob.Socket.assign(throw: throw, banner: nil)
+    |> Mob.Socket.assign(
+      throw: throw,
+      banner: nil,
+      last_throw: %{shells: result.shells, score: result.score}
+    )
     |> rebuild_scene()
   end
+
+  # In 2D a committed movement presents instantly — the grid re-renders
+  # from the adopted state; no hop performance.
+  defp handle_event({:moved, _moved}, %{assigns: %{mode: :board2d}} = socket), do: adopt(socket)
 
   # A committed movement: adopt the session state and perform the hop
   # along the event's path, starting from the pawn's pre-move scene pose
@@ -232,7 +369,7 @@ defmodule Chopaat.Screens.GameScreen do
     prev_scene = socket.assigns.scene
 
     socket
-    |> Mob.Socket.assign(game: Session.game(socket.assigns.session), selected: nil)
+    |> sync()
     |> start_move(moved, prev_scene)
     |> rebuild_scene()
   end
@@ -266,10 +403,18 @@ defmodule Chopaat.Screens.GameScreen do
   # Re-render from the session's current truth. Idempotent per event
   # batch: the session settles every event of a command before
   # broadcasting, so mid-batch snapshots are identical.
-  defp adopt(socket) do
-    socket
-    |> Mob.Socket.assign(game: Session.game(socket.assigns.session), selected: nil)
-    |> rebuild_scene()
+  defp adopt(socket), do: socket |> sync() |> rebuild_scene()
+
+  # Both faces of the session snapshot: the struct (3D scene building,
+  # HUD) and the observe map (the 2D board draws from plain data).
+  defp sync(socket) do
+    session = socket.assigns.session
+
+    Mob.Socket.assign(socket,
+      game: Session.game(session),
+      observed: Session.observe(session),
+      selected: nil
+    )
   end
 
   # On mismatch the visual lied (a wire/applier/asset bug, by construction).
@@ -491,7 +636,13 @@ defmodule Chopaat.Screens.GameScreen do
           props: %{background: :background, padding: :space_md, gap: :space_sm},
           children:
             compact(
-              [header(assigns), banner(assigns.banner), viewport(assigns)] ++
+              [
+                header(assigns),
+                notice(assigns.notice),
+                debug_status(assigns),
+                banner(assigns.banner),
+                board(assigns)
+              ] ++
                 tray(assigns) ++
                 khadu_dialog(assigns) ++
                 [players_tray(assigns)]
@@ -520,10 +671,122 @@ defmodule Chopaat.Screens.GameScreen do
           swatch(entry),
           name_text(entry),
           muted_text(phase_label),
-          assisted_marker(assigns.game)
+          assisted_marker(assigns.game),
+          mode_button(assigns.mode),
+          debug_button()
         ])
     }
   end
+
+  # The mid-game board-mode toggle: labeled with the mode it switches TO.
+  defp mode_button(mode) do
+    %{
+      type: :button,
+      props: %{
+        id: :toggle_board_mode,
+        text: if(mode == :board2d, do: "3D", else: "2D"),
+        fill_width: false,
+        background: :surface_raised,
+        text_color: :on_surface,
+        on_tap: {self(), :toggle_board_mode}
+      },
+      children: []
+    }
+  end
+
+  defp debug_button do
+    %{
+      type: :button,
+      props: %{
+        id: :toggle_debug,
+        text: "dbg",
+        fill_width: false,
+        background: :surface_raised,
+        text_color: :on_surface,
+        on_tap: {self(), :toggle_debug}
+      },
+      children: []
+    }
+  end
+
+  defp notice(nil), do: nil
+
+  defp notice(text) do
+    %{
+      type: :text,
+      props: %{id: :board_mode_notice, text: text, text_size: :sm, text_color: :muted},
+      children: []
+    }
+  end
+
+  # The at-a-glance raw readout the owner asked for: seq, phase, turn,
+  # and the last session event (truncated) — on either board mode.
+  defp debug_status(%{debug: false}), do: nil
+
+  defp debug_status(assigns) do
+    event =
+      case assigns.last_event do
+        nil -> "—"
+        event -> event |> inspect() |> String.slice(0, 140)
+      end
+
+    %{
+      type: :text,
+      props: %{
+        id: :debug_status,
+        text:
+          "seq #{assigns.last_seq || 0} · phase #{assigns.game.phase} · " <>
+            "turn #{assigns.game.turn} · #{event}",
+        text_size: :xs,
+        text_color: :muted
+      },
+      children: []
+    }
+  end
+
+  # The one swappable piece: the board viewport (owner ruling — same
+  # session, same HUD; only the presentation of the board changes).
+  defp board(%{mode: :board2d} = assigns) do
+    Board2D.render(assigns.observed,
+      on: self(),
+      tints: assigns.tints,
+      selected: assigns.selected,
+      targets: targets2d(assigns),
+      last_throw: assigns.last_throw,
+      shell_count: assigns.setup.variant.shell_count,
+      debug: assigns.debug
+    )
+  end
+
+  defp board(assigns), do: viewport(assigns)
+
+  # The selected pawn's legal landings as plain data for the 2D board —
+  # the same actions the 3D "target_*" markers encode, deduped by landing
+  # cell, khadus flagged so they draw red and route through the dialog.
+  defp targets2d(%{game: %Game{phase: :assigning} = game, selected: selected})
+       when is_integer(selected) do
+    game
+    |> Game.legal_actions()
+    |> Enum.filter(&(action_pawn(&1) == selected))
+    |> Enum.map(&{&1, List.last(Rules.action_path(game, &1))})
+    |> Enum.reject(fn {_action, landing} -> is_nil(landing) end)
+    |> Enum.uniq_by(fn {_action, landing} -> landing end)
+    |> Enum.map(fn {action, landing} ->
+      %{action: action, cell: landing_cell(game, landing), khadu: match?({:khadu, _, _}, action)}
+    end)
+  end
+
+  defp targets2d(_assigns), do: []
+
+  defp action_pawn({:assign, _i, ix}), do: ix
+  defp action_pawn({:bonus_step, ix}), do: ix
+  defp action_pawn({:khadu, _i, ix}), do: ix
+  defp action_pawn(_action), do: nil
+
+  defp landing_cell(game, {:track, x}),
+    do: Board.cell_name(Board.cell(game.board, game.turn, x))
+
+  defp landing_cell(_game, :home), do: "center_home"
 
   defp assisted_marker(game) do
     case Game.assisted?(game, game.turn) do
