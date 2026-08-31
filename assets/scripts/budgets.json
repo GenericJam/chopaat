@@ -8,14 +8,14 @@
   },
   "board.glb": {
     "maxTris": 20000,
-    "maxMaterials": 4,
+    "maxMaterials": 5,
     "maxTextures": 0,
     "maxExtent": 1.35,
     "nodeContract": { "arms": 4 }
   },
   "board_6p.glb": {
     "maxTris": 20000,
-    "maxMaterials": 4,
+    "maxMaterials": 5,
     "maxTextures": 0,
     "maxExtent": 1.7,
     "nodeContract": { "arms": 6 }

@@ -17,6 +17,7 @@ mkdir -p "$OUT" "$SHEETS"
 "$BLENDER" --background --python "$SCRIPTS/board.py" -- "$OUT/board_6p.glb" 6
 "$BLENDER" --background --python "$SCRIPTS/pawn.py" -- "$OUT/pawn.glb"
 "$BLENDER" --background --python "$SCRIPTS/cowrie.py" -- "$OUT"
+node "$SCRIPTS/shell_pool.mjs"
 "$BLENDER" --background --python "$SCRIPTS/contact_sheet.py" -- "$SHEETS" "$OUT"
 
 node "$SCRIPTS/gate.mjs"

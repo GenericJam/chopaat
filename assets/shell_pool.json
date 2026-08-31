@@ -1,0 +1,120 @@
+{
+  "version": 2,
+  "ruling": "chopaat-cbr owner ruling: pool = a/c families minus a2; b-series and a2 kept as generator references only",
+  "bounds": {
+    "min_extent_m": 0.023,
+    "max_extent_m": 0.024,
+    "max_spread_m": 0.0015,
+    "measured_spread_m": 0.001
+  },
+  "members": {
+    "cowrie_a1": {
+      "file": "priv/assets/cowrie_a1.glb",
+      "dims_m": [
+        0.0233,
+        0.010112,
+        0.016945
+      ],
+      "extent_m": 0.0233
+    },
+    "cowrie_a3": {
+      "file": "priv/assets/cowrie_a3.glb",
+      "dims_m": [
+        0.023,
+        0.012791,
+        0.01955
+      ],
+      "extent_m": 0.023
+    },
+    "cowrie_a4": {
+      "file": "priv/assets/cowrie_a4.glb",
+      "dims_m": [
+        0.0236,
+        0.009769,
+        0.016417
+      ],
+      "extent_m": 0.0236
+    },
+    "cowrie_a5": {
+      "file": "priv/assets/cowrie_a5.glb",
+      "dims_m": [
+        0.0231,
+        0.01318,
+        0.0198
+      ],
+      "extent_m": 0.0231
+    },
+    "cowrie_a6": {
+      "file": "priv/assets/cowrie_a6.glb",
+      "dims_m": [
+        0.0239,
+        0.007302,
+        0.012393
+      ],
+      "extent_m": 0.0239
+    },
+    "cowrie_a7": {
+      "file": "priv/assets/cowrie_a7.glb",
+      "dims_m": [
+        0.0235,
+        0.01066,
+        0.01737
+      ],
+      "extent_m": 0.0235
+    },
+    "cowrie_c1": {
+      "file": "priv/assets/cowrie_c1.glb",
+      "dims_m": [
+        0.0234,
+        0.010352,
+        0.017042
+      ],
+      "extent_m": 0.0234
+    },
+    "cowrie_c2": {
+      "file": "priv/assets/cowrie_c2.glb",
+      "dims_m": [
+        0.0237,
+        0.010756,
+        0.01575
+      ],
+      "extent_m": 0.0237
+    },
+    "cowrie_c3": {
+      "file": "priv/assets/cowrie_c3.glb",
+      "dims_m": [
+        0.024,
+        0.009595,
+        0.016
+      ],
+      "extent_m": 0.024
+    },
+    "cowrie_c4": {
+      "file": "priv/assets/cowrie_c4.glb",
+      "dims_m": [
+        0.0232,
+        0.011482,
+        0.016972
+      ],
+      "extent_m": 0.0232
+    },
+    "cowrie_c5": {
+      "file": "priv/assets/cowrie_c5.glb",
+      "dims_m": [
+        0.0238,
+        0.009189,
+        0.01491
+      ],
+      "extent_m": 0.0238
+    },
+    "cowrie_c6": {
+      "file": "priv/assets/cowrie_c6.glb",
+      "dims_m": [
+        0.0234,
+        0.011462,
+        0.016627
+      ],
+      "extent_m": 0.0234
+    }
+  }
+}

@@ -31,8 +31,15 @@ def make_pbr_material(
     metallic=0.0,
     sheen=0.0,
     clearcoat=0.0,
+    specular=None,
 ):
-    """Create a simple Principled BSDF material (glTF-exportable PBR)."""
+    """Create a simple Principled BSDF material (glTF-exportable PBR).
+
+    specular: optional Specular IOR Level override (0..1, default 0.5).
+    Needed for very dark rough surfaces (cloth): at a 45-degree camera
+    the default broad specular lobe out-shines a ~0.02 albedo and the
+    surface renders mid-gray. Exports via KHR_materials_specular.
+    """
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes["Principled BSDF"]
@@ -43,6 +50,11 @@ def make_pbr_material(
     for key, val in (("Sheen Weight", sheen), ("Coat Weight", clearcoat)):
         if key in bsdf.inputs and val:
             bsdf.inputs[key].default_value = val
+    if specular is not None:
+        for key in ("Specular IOR Level", "Specular"):
+            if key in bsdf.inputs:
+                bsdf.inputs[key].default_value = specular
+                break
     return mat
 
 

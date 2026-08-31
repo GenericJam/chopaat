@@ -37,12 +37,29 @@ work starts.
 | Asset | Script | Tris | Materials | Notes |
 | --- | --- | --- | --- | --- |
 | probe.glb | probe.py | 44 | 1 | beveled 0.1 m cube; pipeline probe for the plugin spike / parity lanes |
-| board.glb | board.py (arg `4`) | 6,040 | 4 | 4-player cross per RULESET.md |
-| board_6p.glb | board.py (arg `6`) | 9,016 | 4 | 6 arms at 60°, hexagonal center — same script, parametric |
+| board.glb | board.py (arg `4`) | 6,088 | 5 | 4-player cross per RULESET.md; dark scheme (round-2 owner ruling) + gold-inlay center |
+| board_6p.glb | board.py (arg `6`) | 9,036 | 5 | 6 arms at 60°, hexagonal center — same script, parametric |
 | pawn.glb | pawn.py | 1,152 | 1 | lathe profile + directional nose; neutral near-white, runtime `material_tint` per player |
-| cowrie_a1..a4.glb | cowrie.py | 2,206–2,238 | 2 | procedural ovoid method |
-| cowrie_b1..b3.glb | cowrie.py | 1,404–1,662 | 2 | metaball-body method |
-| cowrie_c1..c3.glb | cowrie.py | 2,212–2,264 | 2 | displacement-textured method (clouds / voronoi / wood) |
+| cowrie_a1..a7.glb | cowrie.py | 2,206–2,316 | 2 | procedural ovoid method |
+| cowrie_b1..b3.glb | cowrie.py | 1,404–1,662 | 2 | metaball-body method (generator reference only — not in the game pool) |
+| cowrie_c1..c6.glb | cowrie.py | 2,212–2,306 | 2 | displacement-textured method (clouds / voronoi / wood / marble / stucci) |
+
+## Cowrie game pool (assets/shell_pool.json)
+
+Owner ruling (bead chopaat-cbr): the game pool is the a- and c-families
+minus a2 — `{a1, a3, a4, a5, a6, a7, c1..c6}`. a2 and the b-series stay
+in `priv/assets` as generator references but are never drawn at runtime
+(7 shells per throw come from the pool, set varied per game).
+
+`assets/shell_pool.json` is the machine-readable manifest the
+tumble/runtime lanes consume: members, per-member dims + max extent,
+and the pool-wide extent spread. Pool members are normalized (uniform
+scale in `cowrie.py finalize`) to per-variant targets inside the
+canonical **0.023–0.024 m** window, because the tumble library bakes
+motion against one canonical proxy — bounds consistency is a hard
+requirement. Regenerate with `node assets/scripts/shell_pool.mjs`;
+`gate.mjs` re-verifies membership, staleness, window, and spread
+tolerance on every run.
 
 ## Board addressing (the part the rules engine consumes)
 
@@ -84,12 +101,18 @@ unmistakable from a 45° camera — this is what the tumble library
 Headless EEVEE (Filmic view transform — AgX desaturates too much to
 judge albedo, Standard clips the ivory shells):
 
-- `shells_light.png` / `shells_dark.png` — all 10 variants × 3 poses
-  (dome-up, aperture-up, side), labeled grid, 45° orthographic camera.
-- `board_light.png` / `board_dark.png` — 4-player board from an
-  elevated 45° game camera with pawns in all display poses (upright,
+- `shells_light.png` / `shells_dark.png` — the full 12-member game
+  pool (rows read from assets/shell_pool.json) × 3 poses (dome-up,
+  aperture-up, side), labeled grid, 45° orthographic camera.
+- `board_light.png` / `board_dark.png` — the dark 4-player board from
+  an elevated 45° game camera with pawns in all display poses (upright,
   tipped = final-stretch status, upside-down = reserved mad-pawn, in a
-  base seat) and shells in the center.
+  base seat) and a 7-shell throw from across the pool in the center,
+  on light and dark table backgrounds.
+
+Sheet lighting is exposure-tuned for albedo judgment (sun 2.4 + fill
+10): the round-1 levels (2.8/30) over-exposed — a 0.07-linear tile
+rendered mid-gray — which would have made the dark board unjudgeable.
 
 These are the batched art-direction deliverable — one review round,
 not per-asset pings.

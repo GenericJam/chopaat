@@ -1,18 +1,22 @@
 """Contact sheets — headless EEVEE renders for the batched art-direction round.
 
 Outputs (to the directory given after `--`):
-- shells_light.png / shells_dark.png: every cowrie variant, one row per
+- shells_light.png / shells_dark.png: the full game pool (read from
+  assets/shell_pool.json — owner-ruled membership), one row per
   variant, three poses per row (dome-up, aperture-up, side profile),
   labeled, 45-degree camera.
-- board_light.png / board_dark.png: the board with a pawn on a square
-  and shells in the charkoni, from an elevated 45-degree game camera.
+- board_light.png / board_dark.png: the (dark) board with pawns in all
+  display poses and pool shells in the charkoni, from an elevated
+  45-degree game camera, on light and dark table backgrounds.
 
-Run (after the .glb assets exist in priv/assets):
+Run (after the .glb assets + manifest exist):
   blender --background --python assets/scripts/contact_sheet.py -- \
       assets/contact_sheets priv/assets
 """
 
+import json
 import math
+import os
 import sys
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
@@ -21,9 +25,10 @@ import common  # noqa: E402
 import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
-SHELLS = ["cowrie_a1", "cowrie_a2", "cowrie_a3", "cowrie_a4",
-          "cowrie_b1", "cowrie_b2", "cowrie_b3",
-          "cowrie_c1", "cowrie_c2", "cowrie_c3"]
+_MANIFEST = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "..", "shell_pool.json")
+with open(_MANIFEST) as f:
+    SHELLS = list(json.load(f)["members"].keys())
 POSES = [("dome-up", (0, 0, 0)), ("aperture-up", (math.pi, 0, 0)),
          ("side", (math.pi / 2, 0, 0))]
 PITCH_X = 0.055
@@ -85,15 +90,19 @@ def add_lights_and_world(bg_rgb, strength=1.0):
     bg.inputs["Color"].default_value = (*bg_rgb, 1.0)
     bg.inputs["Strength"].default_value = strength
 
+    # Exposure tuned so albedo is judgeable: the round-1 sheet (sun 2.8 +
+    # fill 30) over-exposed — a 0.07-linear tile rendered as mid-gray,
+    # which made the round-2 dark board unjudgeable. Keep total
+    # illuminance near 1 sun-equivalent instead of faking darker albedos.
     sun_data = bpy.data.lights.new("sun", type="SUN")
-    sun_data.energy = 2.8
+    sun_data.energy = 2.4
     sun_data.angle = math.radians(12)
     sun = bpy.data.objects.new("sun", sun_data)
     sun.rotation_euler = (math.radians(40), math.radians(-15), math.radians(30))
     bpy.context.scene.collection.objects.link(sun)
 
     area_data = bpy.data.lights.new("fill", type="AREA")
-    area_data.energy = 30.0
+    area_data.energy = 10.0
     area_data.size = 1.5
     fill = bpy.data.objects.new("fill", area_data)
     fill.location = (-0.4, -0.5, 0.7)
@@ -185,7 +194,7 @@ def build_shell_sheet(assets_dir, out_path, light):
                     dist * math.sin(math.radians(45)))
     look_at(cam, center)
 
-    render(out_path, 1800, 2200)
+    render(out_path, 1800, 2600)  # 12 pool rows — keep per-row pixel density
 
 
 def build_board_sheet(assets_dir, out_path, light):
@@ -221,12 +230,16 @@ def build_board_sheet(assets_dir, out_path, light):
                     bpy.context.view_layer.update()
                     settle_on_ground(o, clearance=cell_pos(cell).z)
 
-    # shells scattered in the charkoni, mixed orientations
+    # 7 shells (one full throw) scattered in the charkoni, mixed
+    # orientations, drawn from across the game pool (variation is the
+    # feature — no two shells alike)
     for i, (dx, dy, flip) in enumerate([
         (-0.03, 0.02, 0), (0.01, 0.03, 1), (0.035, -0.01, 0),
         (-0.01, -0.03, 1), (0.03, 0.035, 0), (-0.04, -0.01, 0),
+        (0.0, -0.005, 1),
     ]):
-        objs = import_glb(f"{assets_dir}/cowrie_a1.glb")
+        shell = SHELLS[(i * 2) % len(SHELLS)]
+        objs = import_glb(f"{assets_dir}/{shell}.glb")
         for o in objs:
             if o.parent is None:
                 o.location = (dx, dy, 0.011)

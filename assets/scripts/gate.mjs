@@ -10,6 +10,11 @@
  *  3. For boards: the node-addressing contract the rules engine uses —
  *     cell_t{track}_l{0..2}_r{1..8}, base_t{track}(_seat_{0..3}),
  *     center_home.
+ *  4. The cowrie game-pool manifest (assets/shell_pool.json, built by
+ *     shell_pool.mjs): every member exists, its recorded extent matches
+ *     the GLB, extents sit in the canonical window, and the pool-wide
+ *     max-extent spread is within tolerance (the tumble library bakes
+ *     against one canonical proxy — bounds consistency is hard).
  *
  * Budgets/bounds are read straight from the GLB JSON chunk (accessor
  * counts and POSITION min/max), so the gate needs no npm deps beyond
@@ -139,6 +144,54 @@ function gate(file) {
   return true;
 }
 
+function gateManifest() {
+  const path = join(HERE, "..", "shell_pool.json");
+  const failures = [];
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(path, "utf8"));
+  } catch (err) {
+    console.error(`FAIL shell_pool.json — ${err.message}`);
+    return false;
+  }
+
+  const extents = [];
+  for (const [name, member] of Object.entries(manifest.members ?? {})) {
+    let info;
+    try {
+      info = inspect(parseGlbJson(join(ASSETS, `${name}.glb`)));
+    } catch (err) {
+      failures.push(`${name}: missing/unreadable GLB (${err.message})`);
+      continue;
+    }
+    if (Math.abs(info.extent - member.extent_m) > 1e-5)
+      failures.push(
+        `${name}: manifest extent ${member.extent_m}m != GLB ${info.extent.toFixed(6)}m (stale manifest — rerun shell_pool.mjs)`
+      );
+    const { min_extent_m, max_extent_m } = manifest.bounds;
+    const EPS = 1e-5; // GLB accessors are float32; targets sit ON the window edges
+    if (info.extent < min_extent_m - EPS || info.extent > max_extent_m + EPS)
+      failures.push(
+        `${name}: extent ${info.extent.toFixed(6)}m outside canonical window [${min_extent_m}, ${max_extent_m}]`
+      );
+    extents.push(info.extent);
+  }
+  const spread = extents.length ? Math.max(...extents) - Math.min(...extents) : 0;
+  if (spread > manifest.bounds.max_spread_m)
+    failures.push(
+      `pool extent spread ${spread.toFixed(6)}m > tolerance ${manifest.bounds.max_spread_m}m`
+    );
+
+  const label = `shell_pool.json — ${extents.length} members, extent spread ${spread.toFixed(6)}m`;
+  if (failures.length) {
+    console.error(`FAIL ${label}`);
+    for (const f of failures) console.error(`     ${f}`);
+    return false;
+  }
+  console.log(`PASS ${label}`);
+  return true;
+}
+
 const files = process.argv.slice(2).length
   ? process.argv.slice(2)
   : readdirSync(ASSETS).filter((f) => f.endsWith(".glb")).map((f) => join(ASSETS, f));
@@ -147,5 +200,6 @@ if (!files.length) {
   console.error("no .glb files found");
   process.exit(1);
 }
-const ok = files.map(gate).every(Boolean);
-process.exit(ok ? 0 : 1);
+const filesOk = files.map(gate).every(Boolean);
+const manifestOk = gateManifest();
+process.exit(filesOk && manifestOk ? 0 : 1);

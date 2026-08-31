@@ -25,7 +25,13 @@ Addressing — glTF nodes named for the rules engine:
   seats (base pad beside their arm's outer end, lane-2 side),
 - `base_t{track}` at each pad center, `center_home` at the center.
 
-Budget: < 20k tris, 4 materials.
+Budget: < 20k tris, 5 materials (cloth, tile, safe, gate, center).
+
+Palette (round 2, owner ruling in bead chopaat-cbr): dark cloth/
+tabletop ground; tiles a dark warm taupe that still reads as a grid;
+safe = blue, gate = ochre + raised rim (both brightened to hold
+contrast on the dark ground); center = subtle brass/gold inlay so
+'home' reads at a glance. Ivory shells / near-white pawns pop.
 
 Run:
   blender --background --python assets/scripts/board.py -- priv/assets/board.glb 4
@@ -50,7 +56,7 @@ BEVEL = 0.0012
 ROWS = 8
 
 # material_index stash values (resolved after join)
-MAT_TILE, MAT_SAFE, MAT_GATE = 0, 1, 2
+MAT_TILE, MAT_SAFE, MAT_GATE, MAT_CENTER = 0, 1, 2, 3
 
 SAFE_CELLS = {(0, 5), (2, 5), (1, 6)}  # (lane, row); RULESET.md "Safe cells"
 GATE_CELL = (2, 5)  # RULESET.md "Gate"
@@ -116,22 +122,22 @@ def add_tile(x, y, size, name, mat_stash, height=TILE_T, z0=SLAB_T):
     return tile
 
 
-def add_gate_rim(x, y, size):
-    """Raised rim frame marking the gate as a barrier."""
+def add_rim(x, y, size, mat_stash, rise=GATE_EXTRA_T):
+    """Raised rim frame: gate barrier (ochre) or center inlay (gold)."""
     inner = size / 2 - TILE_INSET / 2
     rim_w = 0.004
     parts = []
     for axis in (0, 1):
         for sign in (-1, 1):
-            loc = [x, y, SLAB_T + TILE_T + GATE_EXTRA_T / 2]
+            loc = [x, y, SLAB_T + TILE_T + rise / 2]
             loc[axis] += sign * (inner - rim_w / 2)
             bpy.ops.mesh.primitive_cube_add(size=1.0, location=loc)
             bar = bpy.context.active_object
-            scale = [inner, inner, GATE_EXTRA_T / 2]
+            scale = [inner, inner, rise / 2]
             scale[axis] = rim_w / 2
             bar.scale = scale
             bpy.ops.object.transform_apply(scale=True)
-            bar["mat_stash"] = MAT_GATE
+            bar["mat_stash"] = mat_stash
             parts.append(bar)
     return parts
 
@@ -170,19 +176,41 @@ def build(out_path, arms):
     assert arms in (4, 6), "RULESET.md defines 4- and 6-player boards"
     common.reset_scene()
 
+    # Dark scheme (owner ruling, bead chopaat-cbr): dark cloth/tabletop
+    # feel — NOT madder red, NOT dusty rose. Ivory shells and near-white
+    # pawns must pop against it; safe (blue) and gate (ochre) markings
+    # keep contrast against the dark ground.
+    # Albedos are deliberately deep: Filmic + the sheet/game key light
+    # lift linear albedo hard (0.165 linear renders as mid-gray), so a
+    # "dark table" read needs cloth ~0.02 and tiles ~0.07 linear.
+    # NO sheen on the cloth: Blender's glTF exporter collapses any
+    # nonzero Sheen Weight into sheenColorFactor [1,1,1] (full white
+    # sheen), which re-imports as a grazing-angle lobe that out-shines
+    # the 0.02 albedo and renders the slab LIGHTER than the tiles,
+    # killing the dark-table read. High roughness + low specular carry
+    # the felt look instead.
     cloth = common.make_pbr_material(
-        "board_cloth", base_color=(0.36, 0.075, 0.06), roughness=0.9, sheen=0.4
+        "board_cloth", base_color=(0.020, 0.018, 0.016), roughness=0.92,
+        specular=0.05
     )
     tile_mat = common.make_pbr_material(
-        "board_tile", base_color=(0.87, 0.80, 0.62), roughness=0.75
+        "board_tile", base_color=(0.070, 0.063, 0.055), roughness=0.8,
+        specular=0.15
     )
     safe_mat = common.make_pbr_material(
-        "board_safe", base_color=(0.10, 0.22, 0.38), roughness=0.7
+        "board_safe", base_color=(0.035, 0.11, 0.30), roughness=0.55
     )
     gate_mat = common.make_pbr_material(
-        "board_gate", base_color=(0.55, 0.28, 0.05), roughness=0.6
+        "board_gate", base_color=(0.45, 0.23, 0.035), roughness=0.5
     )
-    mats = [tile_mat, safe_mat, gate_mat]
+    # Center 'home' treatment (asset-lane discretion within the dark
+    # scheme): a subtle brass/gold inlay — lighter warm inset plate plus
+    # a slim raised rim — distinct from safe-blue and gate-ochre so home
+    # reads at a glance.
+    center_mat = common.make_pbr_material(
+        "board_center", base_color=(0.40, 0.28, 0.09), roughness=0.35, metallic=0.4
+    )
+    mats = [tile_mat, safe_mat, gate_mat, center_mat]
 
     slab = add_slab(arms)
     slab.data.materials.append(cloth)
@@ -202,7 +230,7 @@ def build(out_path, arms):
                     add_tile(x, y, SQUARE, f"tile_t{track}_l{lane}_r{row}", stash)
                 )
                 if (lane, row) == GATE_CELL:
-                    tiles.extend(add_gate_rim(x, y, SQUARE))
+                    tiles.extend(add_rim(x, y, SQUARE, MAT_GATE))
                 add_named_empty(f"cell_t{track}_l{lane}_r{row}",
                                 (x, y, SLAB_T + TILE_T))
 
@@ -223,20 +251,28 @@ def build(out_path, arms):
             add_named_empty(f"base_t{track}_seat_{s}",
                             (sx, sy, SLAB_T + TILE_T * 0.8 + TILE_T * 0.6))
 
-    # center home: one raised tile (square for 4 arms, hexagon for 6)
+    # center home: one raised gold-inlay tile (square for 4 arms, hexagon
+    # for 6) with a slim raised rim on the 4p square / an inner inlay
+    # step on the 6p hexagon — 'home' must read at a glance (owner ruling)
     if arms == 4:
-        tiles.append(add_tile(0, 0, 3 * SQUARE, "tile_center", MAT_SAFE))
+        tiles.append(add_tile(0, 0, 3 * SQUARE, "tile_center", MAT_CENTER))
+        tiles.extend(add_rim(0, 0, 3 * SQUARE, MAT_CENTER,
+                             rise=GATE_EXTRA_T * 0.7))
     else:
         r_hex = center_radius(arms) * 2 / math.sqrt(3) - TILE_INSET / 2
-        bpy.ops.mesh.primitive_cylinder_add(
-            vertices=6, radius=r_hex, depth=TILE_T,
-            location=(0, 0, SLAB_T + TILE_T / 2),
-        )
-        hexagon = bpy.context.active_object
-        hexagon.rotation_euler = (0, 0, arm_angle(0, arms) + math.pi / 6)
-        bpy.ops.object.transform_apply(rotation=True)
-        hexagon["mat_stash"] = MAT_SAFE
-        tiles.append(hexagon)
+        for radius, z0, depth in (
+            (r_hex, SLAB_T, TILE_T),                       # inlay plate
+            (r_hex * 0.9, SLAB_T + TILE_T, GATE_EXTRA_T * 0.7),  # inner step
+        ):
+            bpy.ops.mesh.primitive_cylinder_add(
+                vertices=6, radius=radius, depth=depth,
+                location=(0, 0, z0 + depth / 2),
+            )
+            hexagon = bpy.context.active_object
+            hexagon.rotation_euler = (0, 0, arm_angle(0, arms) + math.pi / 6)
+            bpy.ops.object.transform_apply(rotation=True)
+            hexagon["mat_stash"] = MAT_CENTER
+            tiles.append(hexagon)
     add_named_empty("center_home", (0, 0, SLAB_T + TILE_T))
 
     # join tiles into one mesh; resolve stashed material indices
@@ -257,7 +293,7 @@ def build(out_path, arms):
 
     tris, mat_count = common.report(f"board_{arms}p")
     assert tris < 20000, f"board over budget: {tris} tris"
-    assert mat_count <= 4, f"board over material budget: {mat_count}"
+    assert mat_count <= 5, f"board over material budget: {mat_count}"
     common.export_glb(out_path)
 
 
