@@ -14,8 +14,9 @@
 #
 # One full turn cycle (throw → tumble → assign → move → capture) is screen-
 # recorded: the driver simulates each upcoming turn locally from the live
-# {game, rng} snapshot (identical RNG threading to the device's
-# Throws.Native) and starts recording when a capture is coming.
+# session snapshot (Chopaat.Session.export/1 over dist — identical RNG
+# threading to the device's session) and starts recording when a capture
+# is coming.
 #
 # Usage (host, repo root):
 #   CHOPAAT_NODE=chopaat_android_xxx@127.0.0.1 \
@@ -31,7 +32,7 @@ defmodule ChopaatAcceptance do
   alias Chopaat.Game
   alias Chopaat.Scene
   alias Chopaat.Setup
-  alias Chopaat.Throws
+  alias Chopaat.Session
   alias Mob.Scene3d.IR
 
   @poll_ms 150
@@ -151,7 +152,7 @@ defmodule ChopaatAcceptance do
       end
 
     case not state.recorded and state.recording == nil and
-           predict_capture?(a.game, a.rng) do
+           predict_capture?(a.session) do
       true ->
         IO.puts("turn #{state.turns}: capture predicted — recording this turn cycle")
         %{state | recording: start_recording(state)}
@@ -297,10 +298,13 @@ defmodule ChopaatAcceptance do
 
   # ── the local turn simulation (recording trigger) ─────────────────────────
 
-  # Mirrors the screen exactly: Throws.Baked draws the same RNG sequence
-  # Throws.Native does, up-probability from Game.assisted?/2, policy =
-  # first legal action. Returns whether this turn captures.
-  defp predict_capture?(game, rng) do
+  # Mirrors the session exactly: Session.export/1 (a GenServer call on the
+  # device session over dist) snapshots {game, rng}; Session.draw_throw/2
+  # replays the identical server-side draw sequence (shells + cosmetic,
+  # drought-assisted probability included); policy = first legal action.
+  # Returns whether this turn captures.
+  defp predict_capture?(session) do
+    %{game: game, rng: rng} = Session.export(session)
     simulate_turn(game, rng, game.turn)
   end
 
@@ -312,14 +316,8 @@ defmodule ChopaatAcceptance do
         false
 
       true ->
-        up =
-          case Game.assisted?(game, game.turn) do
-            true -> game.variant.assist_up_probability
-            false -> game.variant.fair_up_probability
-          end
-
-        {throw, rng} = Throws.Baked.throw(rng, game.variant, up)
-        {:ok, next} = Game.apply_event(game, {:roll, throw.shells})
+        {shells, _cosmetic, rng} = Session.draw_throw(game, rng)
+        {:ok, next} = Game.apply_event(game, {:roll, shells})
         next.captured_this_turn or simulate_turn(next, rng, player)
     end
   end

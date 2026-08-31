@@ -1,7 +1,8 @@
 defmodule Chopaat.Screens.GameScreenTest do
   @moduledoc false
 
-  # async: false — the Chopaat.Throws impl is swapped via application env.
+  # async: false — the Chopaat.Throws impl is swapped via application env
+  # and the scripted session draw is a run-global agent.
   use Mob.ScreenCase, async: false
 
   import ExUnit.CaptureLog
@@ -14,6 +15,7 @@ defmodule Chopaat.Screens.GameScreenTest do
   alias Chopaat.Setup
   alias Chopaat.Support.Craft
   alias Chopaat.Support.Fixtures
+  alias Chopaat.Support.ScriptedDice
   alias Chopaat.Support.ThrowsStub
   alias Mob.Scene3d.IR
 
@@ -23,10 +25,14 @@ defmodule Chopaat.Screens.GameScreenTest do
     :ok
   end
 
+  # The screen is a session client: it mounts its own Chopaat.Session
+  # (scripted draw seam — randomness stays server-side) and every state
+  # change flows back as subscription events.
   defp mount_game(opts \\ []) do
     params = %{
       setup: Keyword.get(opts, :setup, Setup.new(4, seed: 1)),
-      rng_seed: 1
+      rng_seed: 1,
+      draw: ScriptedDice.draw()
     }
 
     params =
@@ -38,11 +44,24 @@ defmodule Chopaat.Screens.GameScreenTest do
     mount_screen(GameScreen, params)
   end
 
+  # Delivers a message and then the session events it produced (the
+  # session broadcasts before its call returns, so the events are already
+  # in the mailbox — ScreenCase runs callbacks in the test process).
+  defp drive(view, message), do: view |> render_info(message) |> pump()
+
+  defp pump(view) do
+    receive do
+      {:chopaat_session, _session, _seq, _event} = message ->
+        pump(render_info(view, message))
+    after
+      0 -> view
+    end
+  end
+
   defp play_id(view), do: assigns(view).throw.animation.play_id
 
   # Drives {:move_tick, ref} self-messages (real timers land in the test
-  # mailbox — ScreenCase runs callbacks in the test process) until the
-  # move performance finishes.
+  # mailbox) until the move performance finishes.
   defp settle_move(view) do
     case assigns(view).move do
       nil ->
@@ -86,8 +105,8 @@ defmodule Chopaat.Screens.GameScreenTest do
 
   describe "the roll-collection phase" do
     test "a throw tumbles the shells, and the roll lands on animation_done" do
-      ThrowsStub.script([2])
-      view = mount_game() |> render_info({:tap, :throw})
+      ScriptedDice.script([2])
+      view = mount_game() |> drive({:tap, :throw})
 
       # In flight: tumble entity visible and animating, static shells hidden.
       assert %{shells: shells} = assigns(view).throw
@@ -99,9 +118,10 @@ defmodule Chopaat.Screens.GameScreenTest do
       {:ok, shell} = IR.fetch(assigns(view).scene, "shell_0")
       refute shell.visible
 
-      # The roll applies only when the shells settle.
+      # The session already decided; the presented state adopts the roll
+      # only when the shells settle (presentation grace, not dependency).
       assert assigns(view).game.turn_rolls == []
-      view = render_info(view, {:animation_done, play_id(view)})
+      view = drive(view, {:animation_done, play_id(view)})
 
       assert assigns(view).throw == nil
       assert assigns(view).game.phase == :assigning
@@ -112,9 +132,9 @@ defmodule Chopaat.Screens.GameScreenTest do
     end
 
     test "special scores chain — throw again — until a non-special finalizes" do
-      ThrowsStub.script([5, 2])
-      view = mount_game() |> render_info({:tap, :throw})
-      view = render_info(view, {:animation_done, play_id(view)})
+      ScriptedDice.script([5, 2])
+      view = mount_game() |> drive({:tap, :throw})
+      view = drive(view, {:animation_done, play_id(view)})
 
       # 5 up scores 25: special, still rolling.
       assert assigns(view).game.phase == :rolling
@@ -123,8 +143,8 @@ defmodule Chopaat.Screens.GameScreenTest do
       assert text(view) =~ "Special score — throw again!"
       assert find(view, :button, id: :throw).props.text == "Throw again"
 
-      view = render_info(view, {:tap, :throw})
-      view = render_info(view, {:animation_done, play_id(view)})
+      view = drive(view, {:tap, :throw})
+      view = drive(view, {:animation_done, play_id(view)})
 
       assert assigns(view).game.phase == :assigning
       assert assigns(view).game.pending == [25, 2]
@@ -133,21 +153,21 @@ defmodule Chopaat.Screens.GameScreenTest do
     end
 
     test "a throw tap while shells are in flight is ignored" do
-      ThrowsStub.script([2])
-      view = mount_game() |> render_info({:tap, :throw})
+      ScriptedDice.script([2])
+      view = mount_game() |> drive({:tap, :throw})
       id = play_id(view)
 
-      # The stub's script is exhausted — a second draw would raise.
-      view = render_info(view, {:tap, :throw})
+      # The script is exhausted — a second session draw would raise.
+      view = drive(view, {:tap, :throw})
       assert play_id(view) == id
     end
 
     test "a stale animation_done is ignored" do
-      ThrowsStub.script([2])
-      view = mount_game() |> render_info({:tap, :throw})
+      ScriptedDice.script([2])
+      view = mount_game() |> drive({:tap, :throw})
       before = assigns(view).game
 
-      view = render_info(view, {:animation_done, "some_other_play"})
+      view = drive(view, {:animation_done, "some_other_play"})
       assert assigns(view).game == before
       assert %{shells: _still_in_flight} = assigns(view).throw
     end
@@ -161,10 +181,11 @@ defmodule Chopaat.Screens.GameScreenTest do
       assert find(view, :button, text: "Move pawn 1 by 4")
 
       action = hd(Game.legal_actions(assigns(view).game))
-      view = render_info(view, {:tap, {:action, action}})
+      view = drive(view, {:tap, {:action, action}})
 
-      # The rules advanced immediately, but the handoff waits for the move
-      # performance to land — the board stays visible while the pawn hops.
+      # The session advanced immediately, but the handoff waits for the
+      # move performance to land — the board stays visible while the pawn
+      # hops.
       assert assigns(view).game.turn == 1
       assert %Move{} = assigns(view).move
       assert assigns(view).handoff == nil
@@ -177,7 +198,7 @@ defmodule Chopaat.Screens.GameScreenTest do
       # The board is hidden during handoff.
       refute find(view, :native_view, id: :board)
 
-      view = render_info(view, {:tap, :handoff_done})
+      view = drive(view, {:tap, :handoff_done})
       assert text(view) =~ "Player 2"
       assert text(view) =~ "Collect rolls"
       assert find(view, :native_view, id: :board)
@@ -185,9 +206,9 @@ defmodule Chopaat.Screens.GameScreenTest do
 
     test "an unusable roll is offered as an explicit waste" do
       game =
-        Chopaat.Support.Craft.game()
-        |> Chopaat.Support.Craft.pawns(0, [50, :base, :base, :base])
-        |> Chopaat.Support.Craft.assigning([7])
+        Craft.game()
+        |> Craft.pawns(0, [50, :base, :base, :base])
+        |> Craft.assigning([7])
 
       view = mount_game(game: game)
       assert find(view, :button, text: "Waste the 7")
@@ -199,13 +220,13 @@ defmodule Chopaat.Screens.GameScreenTest do
       assert text(view) =~ "bonus +1 ×2"
       assert find(view, :button, text: "Bonus +1 → pawn 1")
 
-      view = render_info(view, {:tap, {:action, {:bonus_step, 0}}})
+      view = drive(view, {:tap, {:action, {:bonus_step, 0}}})
       assert assigns(view).game.bonus_steps == 1
     end
 
     test "a capture grants tod and an extra turn for the same player" do
       view = mount_game(game: Fixtures.capture_ready())
-      view = render_info(view, {:tap, {:action, {:assign, 0, 0}}})
+      view = drive(view, {:tap, {:action, {:assign, 0, 0}}})
 
       game = assigns(view).game
       assert game.tod[0]
@@ -230,7 +251,7 @@ defmodule Chopaat.Screens.GameScreenTest do
       assert find(view, :button, text: "Khadu — pawn 1 defaults with 7")
 
       before = assigns(view).game
-      view = render_info(view, {:tap, {:action, hd(actions)}})
+      view = drive(view, {:tap, {:action, hd(actions)}})
 
       # Dialog up, game untouched, action list hidden behind it.
       assert find(view, :column, id: :khadu_dialog)
@@ -241,13 +262,13 @@ defmodule Chopaat.Screens.GameScreenTest do
       refute find(view, :button, id: :action_0)
 
       # Cancel restores the choice.
-      view = render_info(view, {:tap, :khadu_cancel})
+      view = drive(view, {:tap, :khadu_cancel})
       refute find(view, :column, id: :khadu_dialog)
       assert find(view, :button, id: :action_0)
 
       # Confirm commits: the pawn defaults, dana and pagdu burn.
-      view = render_info(view, {:tap, {:action, hd(actions)}})
-      view = render_info(view, {:tap, :khadu_confirm})
+      view = drive(view, {:tap, {:action, hd(actions)}})
+      view = drive(view, {:tap, :khadu_confirm})
 
       game = assigns(view).game
       assert game != before
@@ -259,7 +280,7 @@ defmodule Chopaat.Screens.GameScreenTest do
       view = mount_game(game: Fixtures.gate_jam([7]))
       action = hd(Game.legal_actions(assigns(view).game))
 
-      view = render_info(view, {:tap, {:action, action}})
+      view = drive(view, {:tap, {:action, action}})
       assert text(view) =~ "Nothing else is pending"
     end
 
@@ -267,7 +288,7 @@ defmodule Chopaat.Screens.GameScreenTest do
       view = mount_game(game: Fixtures.simple_move([4]))
       before = assigns(view).game
 
-      view = render_info(view, {:tap, :khadu_confirm})
+      view = drive(view, {:tap, :khadu_confirm})
       assert assigns(view).game == before
     end
   end
@@ -281,7 +302,7 @@ defmodule Chopaat.Screens.GameScreenTest do
       assert find(view, :row, id: :placement_1)
       assert text(view) =~ "loses"
 
-      view = render_info(view, {:tap, :back_to_menu})
+      view = drive(view, {:tap, :back_to_menu})
       assert navigated_to(view) == {:pop}
     end
   end
@@ -290,12 +311,12 @@ defmodule Chopaat.Screens.GameScreenTest do
     test "picking an own pawn selects it and grows target markers; re-pick deselects" do
       view = mount_game(game: Fixtures.simple_move([4]))
 
-      view = render_info(view, {:pawn_picked, "pawn_0_0"})
+      view = drive(view, {:pawn_picked, "pawn_0_0"})
       assert assigns(view).selected == 0
       assert {:ok, marker} = IR.fetch(assigns(view).scene, "target_assign_0_0")
       assert marker.pickable
 
-      view = render_info(view, {:pawn_picked, "pawn_0_0"})
+      view = drive(view, {:pawn_picked, "pawn_0_0"})
       assert assigns(view).selected == nil
 
       assert {:error, {:unknown_entity, _id}} =
@@ -304,19 +325,19 @@ defmodule Chopaat.Screens.GameScreenTest do
 
     test "another player's pawn, or any pawn outside assigning, does not select" do
       view = mount_game(game: Fixtures.simple_move([4]))
-      view = render_info(view, {:pawn_picked, "pawn_1_0"})
+      view = drive(view, {:pawn_picked, "pawn_1_0"})
       assert assigns(view).selected == nil
 
-      rolling = mount_game() |> render_info({:pawn_picked, "pawn_0_0"})
+      rolling = mount_game() |> drive({:pawn_picked, "pawn_0_0"})
       assert assigns(rolling).selected == nil
     end
 
     test "tapping a target marker commits the action and performs the move" do
       view = mount_game(game: Fixtures.simple_move([4]))
-      view = render_info(view, {:pawn_picked, "pawn_0_0"})
-      view = render_info(view, {:pawn_picked, "target_assign_0_0"})
+      view = drive(view, {:pawn_picked, "pawn_0_0"})
+      view = drive(view, {:pawn_picked, "target_assign_0_0"})
 
-      # Rules advanced (roll consumed), selection cleared, move in flight.
+      # Session advanced (roll consumed), selection cleared, move in flight.
       assert Craft.pos(assigns(view).game, 0, 0) == {:track, 24}
       assert assigns(view).selected == nil
       assert %Move{entity_id: "pawn_0_0"} = assigns(view).move
@@ -334,8 +355,8 @@ defmodule Chopaat.Screens.GameScreenTest do
 
     test "the move lands on the settled scene pose and the board survives ticks" do
       view = mount_game(game: Fixtures.simple_move([4]))
-      view = render_info(view, {:pawn_picked, "pawn_0_0"})
-      view = render_info(view, {:pawn_picked, "target_assign_0_0"})
+      view = drive(view, {:pawn_picked, "pawn_0_0"})
+      view = drive(view, {:pawn_picked, "target_assign_0_0"})
 
       view = settle_move(view)
       assert assigns(view).move == nil
@@ -348,17 +369,17 @@ defmodule Chopaat.Screens.GameScreenTest do
 
     test "a khadu target routes through the confirm dialog before committing" do
       view = mount_game(game: Fixtures.gate_jam([7]))
-      view = render_info(view, {:pawn_picked, "pawn_0_0"})
+      view = drive(view, {:pawn_picked, "pawn_0_0"})
 
       assert {:ok, _marker} = IR.fetch(assigns(view).scene, "target_khadu_0_0")
 
       before = assigns(view).game
-      view = render_info(view, {:pawn_picked, "target_khadu_0_0"})
+      view = drive(view, {:pawn_picked, "target_khadu_0_0"})
 
       assert find(view, :column, id: :khadu_dialog)
       assert assigns(view).game == before
 
-      view = render_info(view, {:tap, :khadu_confirm})
+      view = drive(view, {:tap, :khadu_confirm})
       assert assigns(view).game != before
       assert %Move{} = assigns(view).move
     end
@@ -367,46 +388,46 @@ defmodule Chopaat.Screens.GameScreenTest do
       view = mount_game(game: Fixtures.simple_move([4]))
       before = assigns(view).game
 
-      view = render_info(view, {:pawn_picked, "target_assign_3_0"})
+      view = drive(view, {:pawn_picked, "target_assign_3_0"})
       assert assigns(view).game == before
     end
 
     test "action taps are ignored while a move performs" do
       view = mount_game(game: Fixtures.simple_move([4, 3]))
-      view = render_info(view, {:tap, {:action, {:assign, 0, 0}}})
+      view = drive(view, {:tap, {:action, {:assign, 0, 0}}})
       assert %Move{} = assigns(view).move
 
       before = assigns(view).game
-      view = render_info(view, {:tap, {:action, {:assign, 0, 0}}})
+      view = drive(view, {:tap, {:action, {:assign, 0, 0}}})
       assert assigns(view).game == before
 
       view = settle_move(view)
-      view = render_info(view, {:tap, {:action, {:assign, 0, 0}}})
+      view = drive(view, {:tap, {:action, {:assign, 0, 0}}})
       assert assigns(view).game != before
     end
   end
 
   describe "the settle check (throw honesty)" do
     test "each settled throw records its readback verdict" do
-      ThrowsStub.script([2])
+      ScriptedDice.script([2])
       ThrowsStub.settle_verdicts([:ok])
 
-      view = mount_game() |> render_info({:tap, :throw})
-      view = render_info(view, {:animation_done, play_id(view)})
+      view = mount_game() |> drive({:tap, :throw})
+      view = drive(view, {:animation_done, play_id(view)})
 
       assert assigns(view).settle == %{ok: 1, mismatch: 0, skipped: 0, error: 0}
       assert {"throw_k2_v0", :ok} = assigns(view).last_settle
     end
 
-    test "a mismatch is counted and logged — and the rules still apply" do
-      ThrowsStub.script([2])
+    test "a mismatch is counted and logged — and the session's truth still applies" do
+      ScriptedDice.script([2])
       ThrowsStub.settle_verdicts([{:mismatch, %{animation: "throw_k2_v0"}}])
 
-      view = mount_game() |> render_info({:tap, :throw})
+      view = mount_game() |> drive({:tap, :throw})
 
       log =
         capture_log(fn ->
-          view = render_info(view, {:animation_done, play_id(view)})
+          view = drive(view, {:animation_done, play_id(view)})
           send(self(), {:checked, assigns(view)})
         end)
 
@@ -420,10 +441,10 @@ defmodule Chopaat.Screens.GameScreenTest do
     end
 
     test "without a native scene the check is skipped, not failed" do
-      ThrowsStub.script([2])
+      ScriptedDice.script([2])
 
-      view = mount_game() |> render_info({:tap, :throw})
-      view = render_info(view, {:animation_done, play_id(view)})
+      view = mount_game() |> drive({:tap, :throw})
+      view = drive(view, {:animation_done, play_id(view)})
 
       assert assigns(view).settle.skipped == 1
     end

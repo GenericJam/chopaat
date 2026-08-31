@@ -35,4 +35,14 @@ defmodule Chopaat.RNG do
     {ix, next} = :rand.uniform_s(length(items), rng)
     {Enum.at(items, ix - 1), next}
   end
+
+  @doc """
+  A uniform integer in `0..range-1` — the session's cosmetic channel
+  (clients map it onto their presentation take libraries).
+  """
+  @spec uniform(t(), pos_integer()) :: {non_neg_integer(), t()}
+  def uniform(rng, range) when range > 0 do
+    {n, next} = :rand.uniform_s(range, rng)
+    {n - 1, next}
+  end
 end

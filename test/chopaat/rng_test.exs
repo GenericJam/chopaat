@@ -27,6 +27,24 @@ defmodule Chopaat.RNGTest do
     end
   end
 
+  describe "the cosmetic channel (uniform/2)" do
+    test "yields 0..range-1, deterministic per state, roughly uniform" do
+      {a, _rng} = RNG.uniform(RNG.new(9), 1000)
+      {b, _rng} = RNG.uniform(RNG.new(9), 1000)
+      assert a == b
+
+      {counts, _rng} =
+        Enum.reduce(1..8000, {%{}, RNG.new(10)}, fn _draw, {acc, rng} ->
+          {n, rng} = RNG.uniform(rng, 8)
+          {Map.update(acc, n, 1, &(&1 + 1)), rng}
+        end)
+
+      assert Map.keys(counts) |> Enum.sort() == Enum.to_list(0..7)
+      expected = fn _k -> 1000.0 end
+      assert chi_square(counts, expected) < @crit_df7
+    end
+  end
+
   describe "fair shells (p = 0.5)" do
     test "shells-up counts match Binomial(7, 0.5) by chi-square over 100k draws" do
       counts = up_count_frequencies(42, 0.5)

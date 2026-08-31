@@ -3,67 +3,43 @@ defmodule Chopaat.ThrowsTest do
 
   use ExUnit.Case, async: true
 
-  alias Chopaat.RNG
   alias Chopaat.Throws
   alias Chopaat.Throws.Manifest
   alias Chopaat.Throws.Native
   alias Chopaat.Throws.Settle
-  alias Chopaat.Variant
 
-  test "the baked impl names a tumble matching the drawn up-count" do
-    variant = Variant.gujarat()
+  describe "the baked impl (performance of a session-decided outcome)" do
+    test "perform names a tumble matching the decided up-count, for any cosmetic" do
+      for up_count <- 0..7, cosmetic <- [0, 1, 7, 41, 4_294_967_295] do
+        %{animation: animation} = Throws.Baked.perform(up_count, cosmetic)
+        assert animation.name =~ ~r/^throw_k#{up_count}_v\d+$/
+        assert animation.name in Manifest.takes(up_count)
+      end
+    end
 
-    Enum.reduce(1..50, RNG.new(7), fn _i, rng ->
-      {%{shells: shells, animation: animation}, rng} =
-        Throws.Baked.throw(rng, variant, 0.5)
+    test "the take pick is deterministic per cosmetic — every client performs the same take" do
+      a = Throws.Baked.perform(3, 17)
+      b = Throws.Baked.perform(3, 17)
 
-      assert Enum.count(shells) == 7
-      up_count = Enum.count(shells, & &1)
-      assert animation.name =~ ~r/^throw_k#{up_count}_v[0-3]$/
-      rng
-    end)
-  end
+      assert a.animation.name == b.animation.name
+    end
 
-  test "play_ids are unique per throw — replay is a play_id change" do
-    variant = Variant.gujarat()
-    {a, rng} = Throws.Baked.throw(RNG.new(1), variant, 0.5)
-    {b, _rng} = Throws.Baked.throw(rng, variant, 0.5)
+    test "takes vary across cosmetics — outcomes are not canned onto one take" do
+      names = for cosmetic <- 0..40, do: Throws.Baked.perform(4, cosmetic).animation.name
+      assert match?([_, _ | _], Enum.uniq(names))
+    end
 
-    refute a.animation.play_id == b.animation.play_id
-  end
+    test "play_ids are unique per performance — replay is a play_id change" do
+      a = Throws.Baked.perform(2, 5)
+      b = Throws.Baked.perform(2, 5)
 
-  test "the baked impl delivers completion itself (no native playback yet)" do
-    Throws.Baked.schedule_done(self(), "abc")
-    assert_receive {:animation_done, "abc"}
-  end
+      refute a.animation.play_id == b.animation.play_id
+    end
 
-  test "the drawn configuration is deterministic per RNG state" do
-    variant = Variant.gujarat()
-    {a, _} = Throws.Baked.throw(RNG.new(42), variant, 0.5)
-    {b, _} = Throws.Baked.throw(RNG.new(42), variant, 0.5)
-
-    assert a.shells == b.shells
-    assert a.animation.name == b.animation.name
-  end
-
-  test "takes vary: many throws of the same outcome use different takes" do
-    variant = Variant.gujarat()
-
-    {names, _rng} =
-      Enum.map_reduce(1..80, RNG.new(3), fn _i, rng ->
-        {%{animation: animation}, rng} = Throws.Baked.throw(rng, variant, 0.5)
-        {animation.name, rng}
-      end)
-
-    # Group by outcome: outcomes drawn several times should not be canned
-    # onto one take (the manifest carries ≥4 takes per outcome).
-    takes_used =
-      names
-      |> Enum.group_by(fn "throw_k" <> <<k::binary-size(1)>> <> _ -> k end)
-      |> Enum.filter(fn {_k, list} -> Enum.count_until(list, 8) >= 8 end)
-
-    assert takes_used != []
-    assert Enum.all?(takes_used, fn {_k, list} -> match?([_, _ | _], Enum.uniq(list)) end)
+    test "the baked impl delivers completion itself (no native playback)" do
+      Throws.Baked.schedule_done(self(), "abc")
+      assert_receive {:animation_done, "abc"}
+    end
   end
 
   describe "the tumble manifest contract" do
@@ -130,12 +106,10 @@ defmodule Chopaat.ThrowsTest do
   end
 
   describe "the native impl (device default)" do
-    test "draws the exact RNG sequence the baked impl draws" do
-      variant = Variant.gujarat()
-      {baked, _} = Throws.Baked.throw(RNG.new(42), variant, 0.5)
-      {native, _} = Native.throw(RNG.new(42), variant, 0.5)
+    test "performs the exact take the baked impl performs" do
+      baked = Throws.Baked.perform(5, 23)
+      native = Native.perform(5, 23)
 
-      assert native.shells == baked.shells
       assert native.animation.name == baked.animation.name
     end
 
@@ -144,12 +118,12 @@ defmodule Chopaat.ThrowsTest do
       refute_receive {:animation_done, "abc"}, 10
     end
 
-    test "throw honors the :throw_speed override (scripted acceptance)" do
+    test "perform honors the :throw_speed override (scripted acceptance)" do
       Application.put_env(:chopaat, :throw_speed, 4.0)
       on_exit(fn -> Application.delete_env(:chopaat, :throw_speed) end)
 
-      {throw, _rng} = Native.throw(RNG.new(1), Variant.gujarat(), 0.5)
-      assert throw.animation.speed == 4.0
+      %{animation: animation} = Native.perform(1, 0)
+      assert animation.speed == 4.0
     end
 
     test "settle_check without the native half degrades to :skipped" do

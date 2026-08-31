@@ -1,0 +1,10 @@
+ok: connect to chopaat_uzu1@127.0.0.1
+screen: Chopaat.Screens.GameScreen
+ok: settle verdicts clean after throw #1 (%{error: 0, ok: 1, mismatch: 0, skipped: 0})
+ok: settle verdicts clean after throw #2 (%{error: 0, ok: 2, mismatch: 0, skipped: 0})
+ok: move readback: pawn_0_0 at {0, 0.010999999940395355, 0.10000000149011612} ≈ session pose {0.0, 0.010999999940395355, 0.10000000149011612}
+ok: settle verdicts clean after throw #3 (%{error: 0, ok: 3, mismatch: 0, skipped: 0})
+ok: settle verdicts clean after throw #4 (%{error: 0, ok: 4, mismatch: 0, skipped: 0})
+screenshot → evidence/session_sanity_board.png
+
+SANITY PASS: throws=4 settled+verified, moves=2, move_readbacks=1

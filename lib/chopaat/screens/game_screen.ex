@@ -1,35 +1,42 @@
 defmodule Chopaat.Screens.GameScreen do
   @moduledoc """
-  The game screen: a `Mob.Scene3d` viewport hosting the board composition
-  (`Chopaat.Scene`) under a HUD that makes the two-phase turn structure
-  visible — the roll-collection tray with its throw button while specials
-  chain, then the assignment tray listing every legal action for the
-  surviving rolls and bonus steps.
+  The game screen: a *client* of `Chopaat.Session` (owner ruling,
+  AGENTS.md "Presentation is a client"). It holds no game authority —
+  the session owns the reducer and all randomness; the screen subscribes,
+  renders from observed state plus events, and sends commands.
 
-  State is the pure reducer in assigns: `Chopaat.Game` advances only via
-  `apply_event/2`; randomness is a threaded `Chopaat.RNG` state fed
-  through the `Chopaat.Throws` boundary (drought assistance from
-  `Game.assisted?/2` selects the up-probability). A throw applies its
-  `{:roll, shells}` only on `{:animation_done, play_id}` — shells settle
-  before the score counts.
+  A `Mob.Scene3d` viewport hosts the board composition (`Chopaat.Scene`)
+  under a HUD that makes the two-phase turn structure visible — the
+  roll-collection tray with its throw button while specials chain, then
+  the assignment tray listing every legal action for the surviving rolls
+  and bonus steps.
+
+  The throw flow: `Session.throw/2` decides the outcome server-side and
+  the `{:throw_result, ...}` event carries shells + a cosmetic integer;
+  the screen performs it (`Chopaat.Throws.perform/2`, the baked tumble)
+  and adopts the session's post-roll state only on
+  `{:animation_done, play_id}` — presentation grace, not dependency: the
+  session has already advanced, and headless clients never wait. Before
+  adopting, the screen runs `Chopaat.Throws.settle_check/2` — scene
+  readback asserting the slot orientations match the manifest — recording
+  the verdict in `assigns.settle` and logging mismatches loudly (this
+  verifies the RENDERER against the session's truth; rules are trusted,
+  never the visual — the two-plane model).
 
   Forced khadus surface as explicit options gated by a confirm dialog that
-  names what burns (*dana ane pagdu badi gaya*). Pass-and-play handoff: a
-  full-screen prompt replaces the board whenever the turn passes to
-  another player (deferred until an in-flight move animation lands, so the
-  viewport survives the performance).
+  names what burns (*dana ane pagdu badi gaya*); confirmation commits via
+  `Session.confirm_khadu/3`, the API's explicit destructive command.
+  Pass-and-play handoff: a full-screen prompt replaces the board whenever
+  `{:turn_passed, ...}` hands to another player (deferred until an
+  in-flight move animation lands, so the viewport survives the
+  performance).
 
-  Integration (bead chopaat-hre): pick-to-move — `{:pawn_picked, id}` on a
+  Pick-to-move (bead chopaat-hre): `{:pawn_picked, id}` on a
   current-player pawn selects it and the scene grows pickable `"target_*"`
   markers on every legal landing (tapping one commits the action; khadu
   targets route through the confirm dialog). Committed movement actions
   play as an eased per-cell hop (`Chopaat.Scene.Move`, `{:move_tick, ref}`
-  self-messages, plain IR transform updates). Throws settle natively:
-  `{:animation_done, play_id}` arrives from the plugin, and before the
-  roll applies the screen runs `Chopaat.Throws.settle_check/2` — scene
-  readback asserting the slot orientations match the manifest — recording
-  the verdict in `assigns.settle` and logging mismatches loudly (rules are
-  trusted, never the visual).
+  self-messages) along the `{:moved, ...}` event's path.
   """
 
   use Mob.Screen
@@ -37,10 +44,9 @@ defmodule Chopaat.Screens.GameScreen do
   require Logger
 
   alias Chopaat.Game
-  alias Chopaat.RNG
-  alias Chopaat.Rules
   alias Chopaat.Scene
   alias Chopaat.Scene.Move
+  alias Chopaat.Session
   alias Chopaat.Setup
   alias Chopaat.Throws
   alias Chopaat.Variant
@@ -50,14 +56,14 @@ defmodule Chopaat.Screens.GameScreen do
 
   @impl Mob.Screen
   def mount(params, _session, socket) do
-    setup = params[:setup] || Setup.new(4)
-    game = params[:game] || Game.new(setup.variant, setup.num_players)
+    session = params[:session] || start_session(params)
+    :ok = Session.subscribe(session)
 
     socket =
       Mob.Socket.assign(socket,
-        setup: setup,
-        game: game,
-        rng: RNG.new(params[:rng_seed] || System.unique_integer([:positive])),
+        session: session,
+        setup: Session.setup(session),
+        game: Session.game(session),
         last_shells: nil,
         throw: nil,
         khadu: nil,
@@ -73,41 +79,31 @@ defmodule Chopaat.Screens.GameScreen do
     {:ok, rebuild_scene(socket)}
   end
 
-  # ── throwing ─────────────────────────────────────────────────────────────
+  # A screen-owned session (pass-and-play): linked, so it lives and dies
+  # with its only client. External hosts pass `:session` instead.
+  defp start_session(params) do
+    {:ok, session} =
+      Session.start_link(
+        setup: params[:setup] || Setup.new(4),
+        game: params[:game],
+        rng_seed: params[:rng_seed],
+        draw: params[:draw]
+      )
+
+    session
+  end
+
+  # ── commands ─────────────────────────────────────────────────────────────
 
   @impl Mob.Screen
   def handle_info({:tap, :throw}, socket) do
-    %{game: game, rng: rng, throw: in_flight, handoff: handoff, move: move} = socket.assigns
+    %{game: game, throw: in_flight, handoff: handoff, move: move} = socket.assigns
 
     case game.phase == :rolling and is_nil(in_flight) and is_nil(handoff) and is_nil(move) do
-      false ->
-        {:noreply, socket}
-
-      true ->
-        {throw, rng} = Throws.throw(rng, game.variant, up_probability(game))
-        Throws.schedule_done(self(), throw.animation.play_id)
-
-        socket = Mob.Socket.assign(socket, rng: rng, throw: throw, banner: nil)
-        {:noreply, rebuild_scene(socket)}
+      false -> {:noreply, socket}
+      true -> {:noreply, command(socket, &Session.throw(&1, game.turn))}
     end
   end
-
-  def handle_info({:animation_done, play_id}, socket) do
-    case socket.assigns.throw do
-      %{animation: %{play_id: ^play_id, name: name}, shells: shells} ->
-        # The shells have settled — before the score counts, assert the
-        # performance matched the draw (honest-harness posture): readback
-        # runs while the tumble entity is still the visible truth.
-        socket = record_settle(socket, name, Throws.settle_check(@viewport_id, name))
-        socket = Mob.Socket.assign(socket, throw: nil, last_shells: shells)
-        {:noreply, advance(socket, {:roll, shells})}
-
-      _stale_or_none ->
-        {:noreply, socket}
-    end
-  end
-
-  # ── assignment ───────────────────────────────────────────────────────────
 
   def handle_info({:tap, {:action, _action}}, %{assigns: %{move: move}} = socket)
       when not is_nil(move) do
@@ -121,13 +117,17 @@ defmodule Chopaat.Screens.GameScreen do
   end
 
   def handle_info({:tap, {:action, action}}, socket) do
-    {:noreply, advance(socket, action)}
+    {:noreply, command(socket, &Session.assign(&1, socket.assigns.game.turn, action))}
   end
 
   def handle_info({:tap, :khadu_confirm}, socket) do
     case socket.assigns.khadu do
-      nil -> {:noreply, socket}
-      action -> {:noreply, socket |> Mob.Socket.assign(:khadu, nil) |> advance(action)}
+      nil ->
+        {:noreply, socket}
+
+      action ->
+        socket = Mob.Socket.assign(socket, :khadu, nil)
+        {:noreply, command(socket, &Session.confirm_khadu(&1, socket.assigns.game.turn, action))}
     end
   end
 
@@ -135,7 +135,34 @@ defmodule Chopaat.Screens.GameScreen do
     {:noreply, Mob.Socket.assign(socket, :khadu, nil)}
   end
 
+  # ── session events ───────────────────────────────────────────────────────
+
+  def handle_info({:chopaat_session, session, _seq, event}, socket) do
+    case socket.assigns.session == session do
+      true -> {:noreply, handle_event(event, socket)}
+      false -> {:noreply, socket}
+    end
+  end
+
   # ── flow ─────────────────────────────────────────────────────────────────
+
+  def handle_info({:animation_done, play_id}, socket) do
+    case socket.assigns.throw do
+      %{animation: %{play_id: ^play_id, name: name}, shells: shells} ->
+        # The shells have settled — before the presented state advances,
+        # assert the performance matched the session's draw (two-plane
+        # posture): readback runs while the tumble is the visible truth.
+        socket = record_settle(socket, name, Throws.settle_check(@viewport_id, name))
+
+        socket
+        |> Mob.Socket.assign(throw: nil, last_shells: shells)
+        |> adopt()
+        |> then(&{:noreply, &1})
+
+      _stale_or_none ->
+        {:noreply, socket}
+    end
+  end
 
   def handle_info({:tap, :handoff_done}, socket) do
     {:noreply, Mob.Socket.assign(socket, :handoff, nil)}
@@ -173,9 +200,81 @@ defmodule Chopaat.Screens.GameScreen do
 
   def handle_info(_message, socket), do: {:noreply, socket}
 
+  # legal_actions drives the HUD, so a rejected command here is a stale
+  # tap (double-fire) — the render already moved on. State flows back via
+  # the subscription events either way.
+  defp command(socket, command) do
+    _ok_or_stale = command.(socket.assigns.session)
+    socket
+  end
+
+  # ── event handling (the render plane follows the session's truth) ────────
+
+  # The tumble performs the session's decided outcome; the presented game
+  # state stays put until the shells settle ({:animation_done, _}).
+  defp handle_event({:throw_result, result}, socket) do
+    throw =
+      result.up_count
+      |> Throws.perform(result.cosmetic)
+      |> Map.put(:shells, result.shells)
+
+    Throws.schedule_done(self(), throw.animation.play_id)
+
+    socket
+    |> Mob.Socket.assign(throw: throw, banner: nil)
+    |> rebuild_scene()
+  end
+
+  # A committed movement: adopt the session state and perform the hop
+  # along the event's path, starting from the pawn's pre-move scene pose
+  # (captured before the adopted state rebuilds the scene).
+  defp handle_event({:moved, moved}, socket) do
+    prev_scene = socket.assigns.scene
+
+    socket
+    |> Mob.Socket.assign(game: Session.game(socket.assigns.session), selected: nil)
+    |> start_move(moved, prev_scene)
+    |> rebuild_scene()
+  end
+
+  defp handle_event({:turn_passed, %{extra_turn: true}}, socket) do
+    socket
+    |> Mob.Socket.assign(:banner, "Extra turn — capture!")
+    |> adopt()
+  end
+
+  defp handle_event({:turn_passed, %{next_seat: seat, extra_turn: false}}, socket) do
+    # The handoff prompt replaces the board — while a move performance is
+    # in flight it waits for the landing (land_move/1 releases it).
+    key = if socket.assigns.move, do: :deferred_handoff, else: :handoff
+
+    socket
+    |> Mob.Socket.assign([{key, %{player: seat}}, {:banner, nil}, {:last_shells, nil}])
+    |> adopt()
+  end
+
+  defp handle_event({:game_over, _over}, socket) do
+    socket
+    |> Mob.Socket.assign(handoff: nil, deferred_handoff: nil, banner: nil)
+    |> adopt()
+  end
+
+  # Captures, khadus, wastes, placements: no dedicated performance — the
+  # adopted state renders them (players tray, trays, scene).
+  defp handle_event(_event, socket), do: adopt(socket)
+
+  # Re-render from the session's current truth. Idempotent per event
+  # batch: the session settles every event of a command before
+  # broadcasting, so mid-batch snapshots are identical.
+  defp adopt(socket) do
+    socket
+    |> Mob.Socket.assign(game: Session.game(socket.assigns.session), selected: nil)
+    |> rebuild_scene()
+  end
+
   # On mismatch the visual lied (a wire/applier/asset bug, by construction).
-  # Log loudly, count it, and trust the rules — the game state advances
-  # from the drawn shells regardless.
+  # Log loudly, count it, and trust the rules — the session's state stands
+  # regardless.
   defp record_settle(socket, name, verdict) do
     key =
       case verdict do
@@ -216,8 +315,11 @@ defmodule Chopaat.Screens.GameScreen do
     with {:ok, action} <- Scene.decode_target(id),
          true <- action in Game.legal_actions(game) do
       case action do
-        {:khadu, _i, _ix} -> Mob.Socket.assign(socket, :khadu, action)
-        _committable -> advance(socket, action)
+        {:khadu, _i, _ix} ->
+          Mob.Socket.assign(socket, :khadu, action)
+
+        _committable ->
+          command(socket, &Session.assign(&1, game.turn, action))
       end
     else
       _stale_or_bad_id -> socket
@@ -236,34 +338,17 @@ defmodule Chopaat.Screens.GameScreen do
     end
   end
 
-  defp advance(socket, event) do
-    game = socket.assigns.game
+  # A committed movement performs as an eased per-cell hop from the pawn's
+  # pre-move scene pose to its settled one, along the session event's path.
+  defp start_move(socket, %{seat: seat, pawn: ix, path: path}, prev_scene) do
+    id = "pawn_#{seat}_#{ix}"
+    positions = Enum.map(path, &to_position/1)
 
-    case Game.apply_event(game, event) do
-      {:ok, next} ->
-        socket
-        |> Mob.Socket.assign(game: next, selected: nil)
-        |> start_move(game, event)
-        |> note_transition(game, next)
-        |> rebuild_scene()
-
-      {:error, _reason} ->
-        # legal_actions drives the HUD, so an illegal action here is a
-        # stale tap (double-fire) — the render already moved on.
-        socket
-    end
-  end
-
-  # A committed movement action performs as an eased per-cell hop from the
-  # pawn's current scene pose to its settled one (Chopaat.Scene.Move).
-  defp start_move(socket, prev_game, event) do
-    id = moving_entity(prev_game, event)
-    path = if id, do: Rules.action_path(prev_game, event), else: []
-
-    with true <- path != [],
-         {:ok, %{transform: from}} <- IR.fetch(socket.assigns.scene, id),
+    with true <- positions != [],
+         {:ok, %{transform: from}} <- IR.fetch(prev_scene, id),
          {:ok, %{transform: to}} <- IR.fetch(settled_scene(socket), id) do
-      move = Move.new(id, from, to, Scene.waypoints(prev_game, prev_game.turn, path), now_ms())
+      waypoints = Scene.waypoints(socket.assigns.game, seat, positions)
+      move = Move.new(id, from, to, waypoints, now_ms())
       Process.send_after(self(), {:move_tick, move.ref}, Move.tick_ms())
       Mob.Socket.assign(socket, :move, move)
     else
@@ -271,13 +356,14 @@ defmodule Chopaat.Screens.GameScreen do
     end
   end
 
-  defp moving_entity(game, {:assign, _i, ix}), do: "pawn_#{game.turn}_#{ix}"
-  defp moving_entity(game, {:bonus_step, ix}), do: "pawn_#{game.turn}_#{ix}"
-  defp moving_entity(game, {:khadu, _i, ix}), do: "pawn_#{game.turn}_#{ix}"
-  defp moving_entity(_game, _event), do: nil
+  # Session events carry positions as plain data (renderer vocabulary);
+  # the 3D scene's geometry helpers speak lap coordinates.
+  defp to_position(%{state: :track, track: x}), do: {:track, x}
+  defp to_position(%{state: :home}), do: :home
+  defp to_position(%{state: :base}), do: :base
 
-  # Where the pawn will rest once the move lands: the next state's scene
-  # without the in-flight override (stack fan-out, tip, home ring included).
+  # Where the pawn will rest once the move lands: the adopted state's
+  # scene without the in-flight override (stack fan-out, tip, home ring).
   defp settled_scene(socket) do
     %{game: game, setup: setup, throw: throw, last_shells: last_shells} = socket.assigns
     Scene.build(game, setup, shells_up: last_shells, throw_animation: throw && throw.animation)
@@ -299,37 +385,6 @@ defmodule Chopaat.Screens.GameScreen do
         socket
         |> Mob.Socket.assign(handoff: handoff, deferred_handoff: nil)
         |> rebuild_scene()
-    end
-  end
-
-  defp note_transition(socket, prev, next) do
-    cond do
-      next.phase == :finished ->
-        Mob.Socket.assign(socket, handoff: nil, deferred_handoff: nil, banner: nil)
-
-      next.turn != prev.turn and next.phase == :rolling ->
-        # The handoff prompt replaces the board — while a move performance
-        # is in flight it waits for the landing (land_move/1 releases it).
-        key = if socket.assigns.move, do: :deferred_handoff, else: :handoff
-
-        Mob.Socket.assign(socket, [
-          {key, %{player: next.turn}},
-          {:banner, nil},
-          {:last_shells, nil}
-        ])
-
-      next.turn == prev.turn and next.phase == :rolling and prev.phase == :assigning ->
-        Mob.Socket.assign(socket, :banner, "Extra turn — capture!")
-
-      true ->
-        socket
-    end
-  end
-
-  defp up_probability(game) do
-    case Game.assisted?(game, game.turn) do
-      true -> game.variant.assist_up_probability
-      false -> game.variant.fair_up_probability
     end
   end
 

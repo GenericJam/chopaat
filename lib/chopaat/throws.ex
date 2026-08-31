@@ -1,41 +1,47 @@
 defmodule Chopaat.Throws do
   @moduledoc """
-  The boundary between the game screen and shell-throw *performance*.
-
-  Rules first, animation performs the answer (AGENTS.md): a throw draws the
-  shell configuration from `Chopaat.RNG`, then names a baked tumble whose
-  settled configuration matches the drawn up-count
+  The presentation-side boundary for shell-throw *performance*. The
+  outcome is not decided here: `Chopaat.Session` draws the shells and a
+  cosmetic integer server-side (rules first, animation performs the
+  answer); this boundary turns that decided outcome into a performance —
+  a baked tumble whose settled configuration matches the drawn up-count
   (`Chopaat.Throws.Manifest`, `throw_k{count}_v{take}`), expressed as the
   `%Mob.Scene3d.IR.Animation{}` state the scene assigns to the tumble
-  entity. The screen applies `{:roll, shells}` to `Chopaat.Game` only when
+  entity.
+
+  The screen adopts the session's post-roll state only when
   `{:animation_done, play_id}` arrives — never before the shells visually
-  settle — and first runs `settle_check/2`, the post-settle scene readback
-  asserting the seven slot orientations match the manifest
-  (`Chopaat.Throws.Settle`). A mismatch is logged loudly and the rules are
-  trusted, never the visual.
+  settle — and first runs `settle_check/2`, the post-settle scene
+  readback asserting the seven slot orientations match the manifest
+  (`Chopaat.Throws.Settle`). The check verifies the RENDERER against the
+  session's truth (the two-plane model): a mismatch is logged loudly and
+  the rules are trusted, never the visual.
+
+  The take pick is deterministic in the session's `cosmetic` integer
+  (`rem` by the outcome's take count), so every client — and a host-side
+  predictor replaying the session RNG — performs the identical take.
 
   Impls: `Chopaat.Throws.Native` (device default, set by
-  `Chopaat.MobApp.on_start/0`) lets the plugin deliver the completion event
-  and does the real readback; `Chopaat.Throws.Baked` (host default) delivers
-  completion instantly so the game stays playable and host-testable without
-  the native half. Swap impls via `config :chopaat, :throws, Module`.
+  `Chopaat.MobApp.on_start/0`) lets the plugin deliver the completion
+  event and does the real readback; `Chopaat.Throws.Baked` (host default)
+  delivers completion instantly so the game stays playable and
+  host-testable without the native half. Swap impls via
+  `config :chopaat, :throws, Module`.
   """
 
-  alias Chopaat.RNG
-  alias Chopaat.Variant
   alias Mob.Scene3d.IR.Animation
 
-  @typedoc "A drawn throw awaiting its performance."
-  @type throw :: %{shells: [boolean()], animation: Animation.t()}
+  @typedoc "A performance for a decided throw."
+  @type throw :: %{animation: Animation.t()}
 
   @typedoc "Post-settle readback verdict (`:skipped` = no native scene)."
   @type settle :: :ok | :skipped | {:mismatch, map()} | {:error, term()}
 
   @doc """
-  Draw one shell configuration (fair or drought-assisted probability) and
-  the matching tumble animation state.
+  The tumble performance for a session-decided outcome: `up_count` names
+  the take family, `cosmetic` picks the take deterministically.
   """
-  @callback throw(RNG.t(), Variant.t(), float()) :: {throw(), RNG.t()}
+  @callback perform(non_neg_integer(), non_neg_integer()) :: throw()
 
   @doc """
   Arrange for `{:animation_done, play_id}` to reach `pid`. The baked impl
@@ -51,8 +57,8 @@ defmodule Chopaat.Throws do
   """
   @callback settle_check(String.t(), String.t()) :: settle()
 
-  @spec throw(RNG.t(), Variant.t(), float()) :: {throw(), RNG.t()}
-  def throw(rng, variant, up_probability), do: impl().throw(rng, variant, up_probability)
+  @spec perform(non_neg_integer(), non_neg_integer()) :: throw()
+  def perform(up_count, cosmetic), do: impl().perform(up_count, cosmetic)
 
   @spec schedule_done(pid(), String.t()) :: :ok
   def schedule_done(pid, play_id), do: impl().schedule_done(pid, play_id)
@@ -66,27 +72,25 @@ end
 
 defmodule Chopaat.Throws.Baked do
   @moduledoc """
-  The host-default `Chopaat.Throws` impl: real RNG draw, a take picked from
-  the tumble manifest, instant completion delivery, and no settle readback
-  (`:skipped`) — the game stays playable and host-testable without the
-  native half. Devices run `Chopaat.Throws.Native`.
+  The host-default `Chopaat.Throws` impl: a take picked deterministically
+  from the tumble manifest by the session's cosmetic integer, instant
+  completion delivery, and no settle readback (`:skipped`) — the game
+  stays playable and host-testable without the native half. Devices run
+  `Chopaat.Throws.Native`.
   """
 
   @behaviour Chopaat.Throws
 
-  alias Chopaat.RNG
-  alias Chopaat.Rules
   alias Chopaat.Throws.Manifest
   alias Mob.Scene3d.IR.Animation
 
   @impl Chopaat.Throws
-  def throw(rng, variant, up_probability) do
-    {shells, rng} = RNG.draw(rng, variant.shell_count, up_probability)
-    up_count = Rules.throw_score(variant, shells).up_count
-    {name, rng} = RNG.pick(rng, Manifest.takes(up_count))
-
+  def perform(up_count, cosmetic) do
+    takes = Manifest.takes(up_count)
+    name = Enum.at(takes, rem(cosmetic, length(takes)))
     play_id = Base.encode16(:crypto.strong_rand_bytes(8))
-    {%{shells: shells, animation: %Animation{name: name, play_id: play_id}}, rng}
+
+    %{animation: %Animation{name: name, play_id: play_id}}
   end
 
   @impl Chopaat.Throws
@@ -102,9 +106,9 @@ end
 defmodule Chopaat.Throws.Native do
   @moduledoc """
   The on-device `Chopaat.Throws` impl (default set by
-  `Chopaat.MobApp.on_start/0`): the same audited RNG draw and take pick as
-  `Chopaat.Throws.Baked` (delegated, so host predictions replay the exact
-  RNG sequence), but completion comes from the plugin's
+  `Chopaat.MobApp.on_start/0`): the same deterministic take pick as
+  `Chopaat.Throws.Baked` (delegated, so host predictions perform the
+  exact take), but completion comes from the plugin's
   `{:animation_done, play_id}` event — `schedule_done/2` is a no-op — and
   `settle_check/2` performs the real `Mob.Scene3d.scene/1` readback
   assertion (`Chopaat.Throws.Settle`).
@@ -121,10 +125,10 @@ defmodule Chopaat.Throws.Native do
   alias Chopaat.Throws.Settle
 
   @impl Chopaat.Throws
-  def throw(rng, variant, up_probability) do
-    {throw, rng} = Baked.throw(rng, variant, up_probability)
+  def perform(up_count, cosmetic) do
+    throw = Baked.perform(up_count, cosmetic)
     speed = Application.get_env(:chopaat, :throw_speed, 1.0)
-    {%{throw | animation: %{throw.animation | speed: speed}}, rng}
+    %{throw | animation: %{throw.animation | speed: speed}}
   end
 
   @impl Chopaat.Throws
