@@ -1,5 +1,5 @@
 {
-  "_comment": "Per-asset gate budgets, enforced by gate.mjs. Patterns are glob-lite: '*' matches within a filename. maxExtent = largest bounding-box dimension in meters. nodeContract asserts the addressing nodes the rules engine needs.",
+  "_comment": "Per-asset gate budgets, enforced by gate.mjs. Patterns are glob-lite: '*' matches within a filename. maxExtent = largest bounding-box dimension in meters. nodeContract asserts the addressing nodes the rules engine needs. maxTextureDim = per-embedded-PNG pixel cap; maxFileKB = whole-GLB size cap (exceed it -> KTX2 the textures via gltf-transform).",
   "probe.glb": {
     "maxTris": 100,
     "maxMaterials": 1,
@@ -9,22 +9,28 @@
   "board.glb": {
     "maxTris": 20000,
     "maxMaterials": 5,
-    "maxTextures": 0,
+    "maxTextures": 3,
+    "maxTextureDim": 1024,
+    "maxFileKB": 2048,
     "maxExtent": 1.35,
     "nodeContract": { "arms": 4 }
   },
   "board_6p.glb": {
     "maxTris": 20000,
     "maxMaterials": 5,
-    "maxTextures": 0,
+    "maxTextures": 3,
+    "maxTextureDim": 1024,
+    "maxFileKB": 2048,
     "maxExtent": 1.7,
     "nodeContract": { "arms": 6 }
   },
   "pawn.glb": {
     "minTris": 300,
-    "maxTris": 2000,
-    "maxMaterials": 1,
-    "maxTextures": 0,
+    "maxTris": 3000,
+    "maxMaterials": 2,
+    "maxTextures": 4,
+    "maxTextureDim": 256,
+    "maxFileKB": 256,
     "maxExtent": 0.06
   },
   "cowrie_*.glb": {

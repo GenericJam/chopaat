@@ -19,9 +19,10 @@ node assets/scripts/gate.mjs # gate only (CI entry point)
 | Khronos glTF-Validator | bundled in @gltf-transform/cli 4.4.2 | the standalone npm `gltf-validator` package ships **no CLI executable** — use `npx @gltf-transform/cli validate` |
 | ffmpeg | 9.0.1 (brew) | assembles tumble preview mp4s — Blender 5.x removed its FFMPEG movie render format |
 
-Filament `cmgen` (IBL) is not needed yet — no image textures in any
-current asset (`maxTextures: 0` in budgets.json); revisit when texture
-work starts.
+Filament `cmgen` (IBL) is still not needed — round 3 added embedded
+PNG textures (boards, pawn) but no standalone textures and no IBL.
+KTX2 stays a contingency: the gate's `maxFileKB` budgets say when to
+reach for `gltf-transform` compression (no board exceeds 2 MB today).
 
 ## Conventions
 
@@ -38,10 +39,11 @@ work starts.
 | Asset | Script | Tris | Materials | Notes |
 | --- | --- | --- | --- | --- |
 | probe.glb | probe.py | 44 | 1 | beveled 0.1 m cube; pipeline probe for the plugin spike / parity lanes |
-| board.glb | board.py (arg `4`) | 6,088 | 5 | 4-player cross per RULESET.md; dark scheme (round-2 owner ruling) + gold-inlay center |
+| board.glb | board.py (arg `4`) | 6,088 | 5 | 4-player cross per RULESET.md; dark scheme (round-2 owner ruling) + gold-inlay center; round-3 cloth skin (below) |
 | board_6p.glb | board.py (arg `6`) | 9,036 | 5 | 6 arms at 60°, hexagonal center — same script, parametric |
-| pawn.glb | pawn.py | 1,152 | 1 | lathe profile + directional nose; neutral near-white, runtime `material_tint` per player |
+| pawn.glb | pawn.py | 1,464 | 2 | round 3 (chopaat-xix): turned chaupar beehive profile + directional nose; TWO named materials `pawn_body` (near-white, runtime player tint) + `pawn_accent` (authored ivory band/tip); embedded 256px wood-grain baseColor+roughness |
 | cowrie_a1..a7.glb | cowrie.py | 2,206–2,316 | 2 | procedural ovoid method |
+| (board cloth skin) | board.py | — | — | round 3 (chopaat-a02): embedded textures on `board_cloth` — 256px plain-weave baseColor+roughness tile on TEXCOORD_1 (planar × repeat, REPEAT wrap; no extensions) and a 1024px baked wrinkle NORMAL MAP on TEXCOORD_0 (scripted-sculpt height field: fold ridges + billow, edge/shoulder-weighted, gentle under the play field; markings are separate rigid tiles so legibility is structural). TANGENTs exported. Geometry unchanged. |
 | cowrie_b1..b3.glb | cowrie.py | 1,404–1,662 | 2 | metaball-body method (generator reference only — not in the game pool) |
 | cowrie_c1..c6.glb | cowrie.py | 2,212–2,306 | 2 | displacement-textured method (clouds / voronoi / wood / marble / stucci) |
 | tumbles.glb | tumble.py (+ `gltf-transform resample` in build.sh) | 796 (proxy, x7 instances) | 1 | the tumble animation library — see below |
@@ -113,6 +115,20 @@ transform-only tracks, and the whole library is far below a single
 texture's budget, so splitting would only complicate the runtime
 contract.
 
+Round 3 (bead chopaat-huv, re-bake half): every take now ENTERS FROM
+OUT OF FRAME (top) at the actual game cameras (both player counts;
+`GAME_CAMERAS` in tumble.py mirrors `lib/chopaat/scene.ex` rig/1).
+The sim is the unchanged approved round-2 throw — honest high-energy
+drops were piloted and rejected (a real 0.7 m fall arrives at ~2-4 m/s
+and Bullet exposes no rolling friction, so shells roll off-plate >95%
+of attempts; ballistics forbids a slow arrival from a high start) —
+with a baked entry segment prepended per shell, built backward from
+the launch state: constant tumble, ~3 m/s descent easing into the
+exact launch velocity (C1-continuous splice), walked up past the top
+frustum plane with margin. The manifest records the entry contract
+(`entry`), and gate.mjs re-derives first-keyframe out-of-frame-ness
+from the GLB binary for every slot of every take.
+
 The generation script classifies every shell's final orientation
 in-script (glTF local +Y vs world up, ±0.7 tolerance band; ambiguous
 side-rests re-roll the seed) and writes `assets/tumble_manifest.json`
@@ -148,6 +164,21 @@ judge albedo, Standard clips the ivory shells):
   tipped = final-stretch status, upside-down = reserved mad-pawn, in a
   base seat) and a 7-shell throw from across the pool in the center,
   on light and dark table backgrounds.
+- `pawns_4p.png` / `pawns_6p.png` (+ `_deutan` / `_protan` variants) —
+  round 3 (chopaat-xix): every palette color (assets/palettes.json,
+  Okabe-Ito) × upright/tipped/upside-down on the dark board arm;
+  colorblind variants simulated by colorblind_sim.py (Machado 2009
+  severity-1.0 matrices in linear RGB), which also writes
+  `palette_cvd_report.txt` (min pairwise CIE76 ΔE per palette per
+  condition, asserted ≥ 10).
+- `cloth_closeup.png` — round 3 (chopaat-a02): raking-light close-up,
+  the wrinkle-normal selling shot.
+- `tumble_entry_4p.png` / `tumble_entry_6p.png` — round 3
+  (chopaat-huv): frame strips from the ACTUAL game cameras
+  (lib/chopaat/scene.ex rig/1), one take per outcome (rows k0..k7,
+  columns frames 1, 7, 13, 19, 31, final at 60 fps). Frame 1 shows no
+  shells — they start above the frustum; this render is the entry
+  acceptance (gate.mjs asserts the same analytically for all takes).
 
 Sheet lighting is exposure-tuned for albedo judgment (sun 2.4 + fill
 10): the round-1 levels (2.8/30) over-exposed — a 0.07-linear tile

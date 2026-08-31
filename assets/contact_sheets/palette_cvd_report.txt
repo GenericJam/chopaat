@@ -1,0 +1,12 @@
+Palette CVD verification (assets/scripts/colorblind_sim.py)
+Machado 2009 severity-1.0 matrices, CIE76 deltaE in CIELAB/D65
+pass threshold: min pairwise deltaE >= 10.0
+
+players_4 normal : min pair deltaE   59.5 (green vs sky blue); min vs dark cloth   64.2 (green)
+players_4 deutan : min pair deltaE   33.6 (vermillion vs yellow); min vs dark cloth   41.8 (green)
+players_4 protan : min pair deltaE   37.2 (vermillion vs green); min vs dark cloth   49.0 (green)
+
+players_6 normal : min pair deltaE   26.4 (sky blue vs blue); min vs dark cloth   53.6 (blue)
+players_6 deutan : min pair deltaE   17.9 (green vs purple); min vs dark cloth   41.8 (green)
+players_6 protan : min pair deltaE   20.7 (sky blue vs purple); min vs dark cloth   47.5 (purple)
+

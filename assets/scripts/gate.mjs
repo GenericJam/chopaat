@@ -6,7 +6,8 @@
  *     which wraps the official validator; the standalone npm
  *     `gltf-validator` package ships no CLI executable).
  *  2. Budgets from assets/scripts/budgets.json: triangle count,
- *     material count, texture count, bounding extent.
+ *     material count, texture count, texture dimensions (PNG IHDR read
+ *     straight from the GLB binary chunk), file size, bounding extent.
  *  3. For boards: the node-addressing contract the rules engine uses —
  *     cell_t{track}_l{0..2}_r{1..8}, base_t{track}(_seat_{0..3}),
  *     center_home.
@@ -23,7 +24,11 @@
  *     outcome 0..7; durations inside the band; and — the honest-harness
  *     check — the FINAL rotation quaternion of every slot in every
  *     animation is read back out of the GLB binary chunk and re-classified
- *     (glTF local +Y vs world up), which must match the manifest.
+ *     (glTF local +Y vs world up), which must match the manifest. Round 3
+ *     (chopaat-huv): the FIRST translation keyframe of every slot in every
+ *     animation is re-derived the same way and must sit above the top
+ *     frustum plane of BOTH game cameras (manifest `entry` params — the
+ *     out-of-frame entry contract).
  *
  * Budgets/bounds are read straight from the GLB JSON chunk (accessor
  * counts and POSITION min/max), so the gate needs no npm deps beyond
@@ -35,7 +40,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -86,6 +91,24 @@ function accessorFloats(gltf, bin, idx) {
     for (let c = 0; c < comps; c++)
       out[i * comps + c] = bin.readFloatLE(start + i * stride + c * 4);
   return { values: out, comps, count: acc.count };
+}
+
+/** PNG dimensions from the first bytes of an embedded image (IHDR). */
+function pngDims(bin, view) {
+  const start = view.byteOffset ?? 0;
+  if (bin.readUInt32BE(start) !== 0x89504e47) return null; // not PNG
+  return { w: bin.readUInt32BE(start + 16), h: bin.readUInt32BE(start + 20) };
+}
+
+function textureDims(gltf, bin) {
+  const dims = [];
+  for (const image of gltf.images ?? []) {
+    if (image.bufferView === undefined) continue;
+    const d = pngDims(bin, gltf.bufferViews[image.bufferView]);
+    if (d) dims.push(d);
+    else dims.push({ w: NaN, h: NaN }); // non-PNG (e.g. KTX2): budget by count only
+  }
+  return dims;
 }
 
 function inspect(gltf) {
@@ -142,7 +165,8 @@ function gate(file) {
 
   // 2. budgets
   const budget = budgetFor(file);
-  const info = inspect(parseGlbJson(file));
+  const { json: gltfJson, bin } = parseGlb(file);
+  const info = inspect(gltfJson);
   if (!budget) {
     failures.push("no budget entry in budgets.json — every asset needs one");
   } else {
@@ -156,6 +180,15 @@ function gate(file) {
       failures.push(`textures ${info.textures} > max ${budget.maxTextures}`);
     if (budget.maxExtent !== undefined && info.extent > budget.maxExtent)
       failures.push(`extent ${info.extent.toFixed(3)}m > max ${budget.maxExtent}m`);
+    if (budget.maxTextureDim !== undefined)
+      for (const d of textureDims(gltfJson, bin))
+        if (d.w > budget.maxTextureDim || d.h > budget.maxTextureDim)
+          failures.push(`texture ${d.w}x${d.h} > max dim ${budget.maxTextureDim}`);
+    if (budget.maxFileKB !== undefined) {
+      const kb = statSync(file).size / 1024;
+      if (kb > budget.maxFileKB)
+        failures.push(`file ${kb.toFixed(0)}KB > max ${budget.maxFileKB}KB (KTX2 the textures via gltf-transform)`);
+    }
 
     // 3. board addressing contract
     if (budget.nodeContract) {
@@ -259,6 +292,25 @@ function gateTumbles() {
   const [minDur, maxDur] = manifest.duration_band_s;
   const tol = manifest.up_axis_tolerance;
   const perOutcome = new Map();
+
+  // out-of-frame entry contract (chopaat-huv): a glTF-local translation
+  // (relative to the tumbles origin at center_home) must sit above the
+  // top frustum plane of every game camera in manifest.entry
+  const entry = manifest.entry;
+  if (!entry) failures.push("manifest missing the entry contract (chopaat-huv)");
+  const outOfFrameTop = (t) => {
+    const wy = t[1] + entry.center_home_y_m - entry.clearance_m;
+    for (const cam of Object.values(entry.cameras)) {
+      const th = (cam.pitch_deg * Math.PI) / 180;
+      const vy = wy - cam.position[1];
+      const vz = t[2] - cam.position[2];
+      const yC = vy * Math.cos(th) + vz * Math.sin(th);
+      const depth = -(vy * -Math.sin(th) + vz * Math.cos(th));
+      const tanHalf = Math.tan(((cam.fov_y_deg / 2) * Math.PI) / 180);
+      if (depth > 0 && yC <= tanHalf * depth) return false;
+    }
+    return true;
+  };
   for (const [name, meta] of Object.entries(manifest.animations)) {
     const m = /^throw_k([0-7])_v(\d+)$/.exec(name);
     if (!m) {
@@ -302,6 +354,15 @@ function gateTumbles() {
         failures.push(`${name}: ${slot} missing rotation/translation channel`);
         return;
       }
+      // entry: the FIRST translation keyframe must be out of frame (top)
+      // at both game cameras
+      const tr = accessorFloats(gltf, bin, anim.samplers[trans.sampler].output);
+      const t0 = tr.values.subarray(0, 3);
+      if (entry && !outOfFrameTop(t0))
+        failures.push(
+          `${name}: ${slot} entry starts IN frame at a game camera (${[...t0].map((v) => v.toFixed(3)).join(", ")})`
+        );
+
       const { values, count } = accessorFloats(gltf, bin, anim.samplers[rot.sampler].output);
       const [x, y, z, w] = values.subarray((count - 1) * 4, count * 4);
       // world-Y of the node's local +Y axis, from the quaternion directly
