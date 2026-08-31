@@ -17,6 +17,7 @@ node assets/scripts/gate.mjs # gate only (CI entry point)
 | Node | v26.7.0 | gate + CLI tooling via `npx` |
 | @gltf-transform/cli | 4.4.2 | `validate` (wraps the official Khronos glTF-Validator) + `inspect` |
 | Khronos glTF-Validator | bundled in @gltf-transform/cli 4.4.2 | the standalone npm `gltf-validator` package ships **no CLI executable** — use `npx @gltf-transform/cli validate` |
+| ffmpeg | 9.0.1 (brew) | assembles tumble preview mp4s — Blender 5.x removed its FFMPEG movie render format |
 
 Filament `cmgen` (IBL) is not needed yet — no image textures in any
 current asset (`maxTextures: 0` in budgets.json); revisit when texture
@@ -43,6 +44,7 @@ work starts.
 | cowrie_a1..a7.glb | cowrie.py | 2,206–2,316 | 2 | procedural ovoid method |
 | cowrie_b1..b3.glb | cowrie.py | 1,404–1,662 | 2 | metaball-body method (generator reference only — not in the game pool) |
 | cowrie_c1..c6.glb | cowrie.py | 2,212–2,306 | 2 | displacement-textured method (clouds / voronoi / wood / marble / stucci) |
+| tumbles.glb | tumble.py (+ `gltf-transform resample` in build.sh) | 796 (proxy, x7 instances) | 1 | the tumble animation library — see below |
 
 ## Cowrie game pool (assets/shell_pool.json)
 
@@ -95,6 +97,43 @@ roll about X. The aperture faces carry the dark `cowrie_aperture`
 material between two lip bulges so aperture-up vs aperture-down is
 unmistakable from a 45° camera — this is what the tumble library
 (chopaat-5gx) reads back after settle. RULESET.md throws 7 shells.
+
+## Tumble library (priv/assets/tumbles.glb + assets/tumble_manifest.json)
+
+Bead chopaat-5gx. Baked rigid-body throws of the RULESET.md 7 shells,
+one named glTF animation per take: `throw_k{count}_v{take}`, count =
+apertures up (0..7), ≥4 takes per outcome. Motion is baked once
+against a canonical collision proxy (convex hull at the pool-mean
+dims; fairness asserted against the pool envelope in tumble.py and
+recorded in the manifest) targeting slot nodes `shell_0..shell_6`;
+the runtime assigns each game's 7 drawn pool meshes to the slots —
+never per-variant animations (owner ruling). One file, not
+per-outcome files: the slots/mesh are shared, animations are
+transform-only tracks, and the whole library is far below a single
+texture's budget, so splitting would only complicate the runtime
+contract.
+
+The generation script classifies every shell's final orientation
+in-script (glTF local +Y vs world up, ±0.7 tolerance band; ambiguous
+side-rests re-roll the seed) and writes `assets/tumble_manifest.json`
+— animation → outcome/take/duration/per-slot orientation — which the
+integration lane asserts against `Mob.Scene3d.scene/1` readback.
+`gate.mjs` re-derives every animation's final quaternions from the GLB
+binary chunk and fails on any mismatch with the manifest.
+
+Physics notes that were paid for (see tumble.py comments): Bullet's
+default 0.04 m collision margin exceeds the shell size (explicit tiny
+margins); Blender treats the object origin as the center of mass (sim
+runs on a centroid-origin clone, keyframes re-based to center-bottom);
+kinematic-launch keyframes make bodies permanently ineligible for
+sleep and dome-contact top-spin has no rolling friction, so takes end
+via a position/classification-stability window with the last 0.4 s
+converged onto the final simulated pose.
+
+Preview evidence: `tumble_preview.py` round-trips the shipped GLB
+(imports it, swaps pool meshes onto the slots exactly as the runtime
+does, solos one animation) and renders mp4 settles into
+assets/contact_sheets/.
 
 ## Contact sheets (assets/contact_sheets/)
 

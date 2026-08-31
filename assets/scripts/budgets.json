@@ -33,5 +33,12 @@
     "maxMaterials": 2,
     "maxTextures": 0,
     "maxExtent": 0.035
+  },
+  "tumbles.glb": {
+    "_comment": "7 slot nodes sharing one placeholder collision-proxy hull; runtime swaps in pool shell meshes. Extent = the proxy mesh (bounds ignore node transforms).",
+    "maxTris": 900,
+    "maxMaterials": 1,
+    "maxTextures": 0,
+    "maxExtent": 0.03
   }
 }
