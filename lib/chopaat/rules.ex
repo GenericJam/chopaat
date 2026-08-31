@@ -97,6 +97,55 @@ defmodule Chopaat.Rules do
   def apply_action(%Game{}, _action), do: {:error, :illegal_action}
 
   @doc """
+  The ordered positions a movement action traverses, landing last (the
+  start square excluded) — the scene layer's move-animation waypoints and
+  target markers derive from this (bead chopaat-hre). Uses exactly
+  `move_target/4`'s geometry: wrap-mode pawns skip the private passage at
+  the connector, khadus reverse `khadu_reverse` cells then run forward with
+  the same skip. Unlock actions step onto the launch square; waste actions
+  traverse nothing.
+
+      iex> game = Chopaat.Game.new(4)
+      iex> game = %{game | phase: :assigning, pending: [3]}
+      iex> game = %{game | pawns: Map.put(game.pawns, 0, [%Chopaat.Pawn{pos: {:track, 20}} | tl(game.pawns[0])])}
+      iex> Chopaat.Rules.action_path(game, {:assign, 0, 0})
+      [{:track, 21}, {:track, 22}, {:track, 23}]
+  """
+  @spec action_path(Game.t(), action()) :: [Pawn.position()]
+  def action_path(%Game{} = game, {:assign, i, ix}) do
+    score = Enum.at(game.pending, i)
+
+    case Enum.at(Map.fetch!(game.pawns, game.turn), ix) do
+      %Pawn{pos: :base} -> [{:track, 0}]
+      %Pawn{pos: {:track, _}} = pawn -> forward_path(game, game.turn, pawn, score)
+      _home_or_missing -> []
+    end
+  end
+
+  def action_path(%Game{} = game, {:bonus_step, ix}) do
+    case Enum.at(Map.fetch!(game.pawns, game.turn), ix) do
+      %Pawn{pos: {:track, _}} = pawn -> forward_path(game, game.turn, pawn, 1)
+      _other -> []
+    end
+  end
+
+  def action_path(%Game{} = game, {:khadu, i, ix}) do
+    score = Enum.at(game.pending, i)
+    reverse = game.variant.khadu_reverse
+
+    case Enum.at(Map.fetch!(game.pawns, game.turn), ix) do
+      %Pawn{pos: {:track, x}} ->
+        back = for step <- 1..reverse, do: {:track, x - step}
+        back ++ steps_path(game.board, true, x - reverse, score)
+
+      _other ->
+        []
+    end
+  end
+
+  def action_path(%Game{}, _action), do: []
+
+  @doc """
   Whether a score has an ordinary use (unlock or normal move) for the player
   to move, independent of any pending-roll context. This is the "legal move
   becomes available" fact the RNG-assistance layer consumes.
@@ -191,6 +240,31 @@ defmodule Chopaat.Rules do
 
       true ->
         {:ok, {:track, raw}, false}
+    end
+  end
+
+  # Step-by-step expansion of move_target/4: same wrap rule per step, so
+  # the traversed path always agrees with the landing the rules computed.
+  defp forward_path(game, player, %Pawn{pos: {:track, x}} = pawn, steps) do
+    steps_path(game.board, wrap_mode?(game, player, pawn), x, steps)
+  end
+
+  defp steps_path(board, wrap?, from, steps) do
+    1..steps
+    |> Enum.map_reduce(from, fn _step, pos ->
+      next = advance(board, wrap?, pos)
+      {next, next}
+    end)
+    |> elem(0)
+    |> Enum.map(fn pos -> if pos == board.home, do: :home, else: {:track, pos} end)
+  end
+
+  defp advance(board, wrap?, pos) do
+    raw = pos + 1
+
+    case wrap? and raw > board.connector do
+      true -> rem(raw + board.khadu_skip, board.home)
+      false -> raw
     end
   end
 

@@ -22,6 +22,12 @@ defmodule Chopaat.MobApp do
   def on_start do
     Application.put_env(:mob_scene3d, :asset_root, {:chopaat, "priv/assets"})
 
+    # Device throws are performed by the plugin: {:animation_done, play_id}
+    # comes from native clip completion and the post-settle scene readback
+    # is real (bead chopaat-hre). Hosts keep the Baked default so the game
+    # stays playable/testable without the native half.
+    Application.put_env(:chopaat, :throws, Chopaat.Throws.Native)
+
     Mob.DNS.configure_pure_beam()
     Mob.Screen.start_root(Chopaat.Screens.MenuScreen)
 
