@@ -130,6 +130,9 @@ defmodule Chopaat.Scene do
         data: %Model{
           asset: "pawn.glb",
           material: %Material{
+            # Scoped to the body so the authored ivory accent band/tip stays
+            # untinted (mob_scene3d name-scoped overrides; see chopaat-xix).
+            scope: "pawn_body",
             base_color: tint,
             emissive: if(selected?, do: emissive(tint), else: nil)
           }
