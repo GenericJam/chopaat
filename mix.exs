@@ -41,6 +41,7 @@ defmodule Chopaat.MixProject do
       # public repo and points MOB_SCENE3D_PATH at it.
       {:mob_scene3d, path: System.get_env("MOB_SCENE3D_PATH", "/Users/kevin/code/mob_scene3d")},
       {:mob_dev, "~> 0.6.30", only: :dev, runtime: false},
+      {:image, "~> 0.54", only: :dev},
       # mob's native build compiles the sqlite NIF from deps/exqlite
       # unconditionally (every Mob app ships it); the game itself keeps all
       # state in screen assigns.
