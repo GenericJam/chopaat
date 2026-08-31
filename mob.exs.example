@@ -1,0 +1,17 @@
+# Copy to mob.exs and set the two machine-local paths.
+# EVERYTHING else in here is required for the app to build correctly —
+# especially the :plugins activation, without which the 3D viewport
+# silently renders nothing (learned the hard way, twice).
+import Config
+
+config :mob_dev,
+  mob_dir: "/path/to/mob",
+  elixir_lib: "/path/to/elixir/lib"
+
+# mob_scene3d is a path dep and unsigned until its release chain lands
+# (mob_scene3d-fjq); acknowledge it so its NIF + natives build in.
+config :mob, :acknowledge_unsafe_plugins, [:mob_scene3d]
+
+# Activate the scene3d plugin (viewport NIFs + natives build in via the
+# deploy regen hook). Unsigned path dep until mob_scene3d-fjq releases it.
+config :mob, :plugins, [:mob_scene3d]
