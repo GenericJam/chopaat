@@ -5,8 +5,12 @@ A cross-and-circle board game (the Chaupar family) built with
 iOS and Android — with 3D board, pieces, and cowrie-shell throws rendered
 through [mob_scene3d](https://github.com/GenericJam/mob_scene3d).
 
-**Status: design/scaffold.** No code yet. Plan in the bead tracker
-(`bd list`); conventions in [AGENTS.md](AGENTS.md).
+**Status: rules engine landed.** The pure rules engine implements the
+owner's authoritative [RULESET.md](RULESET.md) (the Gujarat variation) as
+the default `Chopaat.Variant`; formalization choices and open owner
+questions are recorded in `decisions/`. Screens, scene, and assets are in
+flight — plan in the bead tracker (`bd list`); conventions in
+[AGENTS.md](AGENTS.md).
 
 This repo is also the **driving consumer** for mob_scene3d: game
 development is expected to find plugin gaps, and those gaps get fixed
@@ -15,9 +19,10 @@ upstream, never worked around silently here (see AGENTS.md).
 ## Architecture at a glance
 
 - **Rules engine** — pure Elixir functions over game state. No process
-  state, no rendering, no randomness inside the rules: `legal_moves/2`,
-  `apply_move/3`, `throw_value/1` all take everything they need. Property
-  tests and mass simulated playthroughs are the acceptance gate.
+  state, no rendering, no randomness inside the rules: `Rules.throw_score/2`,
+  `Rules.legal_actions/1`, `Rules.apply_action/2` and the `Game` reducer all
+  take everything they need. Property tests and mass simulated playthroughs
+  are the acceptance gate.
 - **House rules are data, not code.** Chaupar/Chopaat variants disagree on
   shell-count values, extra-throw triggers, captures, and home-column
   entry. The rules engine takes a variant config struct; the family's
