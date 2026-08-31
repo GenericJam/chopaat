@@ -33,3 +33,6 @@ keystore.properties
 
 # Vendored Filament artifacts (~100 MB; scripts/fetch_filament_ios.sh)
 ios/vendor/
+
+# Stray object emitted at repo root by mob_dev's iOS keepalive extraction
+/erl_nif.o

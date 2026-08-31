@@ -130,11 +130,16 @@ pub fn build(b: *std.Build) void {
     // project bridging header wraps mob's and adds the plugin's ObjC
     // surface (MobScene3dView.h / MobScene3dRuntime.h); mob's header and
     // the plugin headers resolve via the -Xcc -I clang-importer paths.
+    // The plugin checkout resolves like mix.exs does: MOB_SCENE3D_PATH,
+    // falling back to the local path-dep default (path deps are not
+    // materialized under deps/).
+    const scene3d_dir =
+        b.graph.environ_map.get("MOB_SCENE3D_PATH") orelse "/Users/kevin/code/mob_scene3d";
     swift_run.addArg(b.fmt("{s}/Chopaat-Bridging-Header.h", .{project_ios_dir}));
     swift_run.addArg("-Xcc");
     swift_run.addArg(b.fmt("-I{s}/ios", .{mob_dir}));
     swift_run.addArg("-Xcc");
-    swift_run.addArg(b.fmt("-I{s}/../deps/mob_scene3d/priv/native/ios", .{project_ios_dir}));
+    swift_run.addArg(b.fmt("-I{s}/priv/native/ios", .{scene3d_dir}));
     swift_run.addArg("-I");
     swift_run.addArg(b.fmt("{s}/ios", .{mob_dir}));
     swift_run.addArgs(&.{ "-parse-as-library", "-wmo" });
@@ -306,8 +311,8 @@ pub fn build(b: *std.Build) void {
         mm_run.addArg(b.fmt("-isysroot{s}", .{sdkroot}));
         mm_run.addArg("-c");
         mm_run.addFileArg(.{ .cwd_relative = b.fmt(
-            "{s}/../deps/mob_scene3d/priv/native/ios/MobScene3dView.mm",
-            .{project_ios_dir},
+            "{s}/priv/native/ios/MobScene3dView.mm",
+            .{scene3d_dir},
         ) });
         mm_run.addArg("-o");
         installAndCollect(b, objects_step, &objs, mm_run.addOutputFileArg("MobScene3dView.o"), "MobScene3dView.o");
