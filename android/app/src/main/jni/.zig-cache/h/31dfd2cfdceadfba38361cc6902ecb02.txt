@@ -1,0 +1,26 @@
+0
+13007 27502712 1788149293596798163 a117eadd5eeb83f08efbd919d7275547 0 /Users/kevin/code/chopaat/android/app/src/main/jni/beam_jni.c
+52236 6041195 1787322261649668016 5476ae8a0687e853b0305dd7b14443da 0 /Users/kevin/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/jni.h
+2497 5404292 1778277693000000000 b2fdb090a7260fd9bb1ee13109f6f95f 1 include/stdarg.h
+417 5404087 1778277693000000000 c8f062fa64e6bd8bfcbd2e1bc393ce2a 1 include/__stdarg_header_macro.h
+467 5404085 1778277693000000000 0f78a248b04856b5d60755486dcfed37 1 include/__stdarg___gnuc_va_list.h
+448 5404090 1778277693000000000 ee803b33be587fcb44ebc540dc1bd5b4 1 include/__stdarg_va_list.h
+771 5404088 1778277693000000000 26da59e07c42693242835235ceb88a64 1 include/__stdarg_va_arg.h
+445 5404086 1778277693000000000 9c52fce0866e80d935dd268cff80c9c7 1 include/__stdarg___va_copy.h
+451 5404089 1778277693000000000 7472f18389b3074d0606de36cb9d29ce 1 include/__stdarg_va_copy.h
+27519 5404299 1778277693000000000 1bf965d23c79a082ac103b8d4944724e 1 include/stdint.h
+6679 6042314 1787322261816452999 053a88d8d329962d5fc6b96387e671f1 0 /Users/kevin/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/stdint.h
+1828 6041222 1787322261655488082 37f597f3263578795f077ce161f1f838 0 /Users/kevin/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/bits/wchar_limits.h
+12911 6041173 1787322261645956693 2ca97207fa08bd8024aad0746b57fa7f 0 /Users/kevin/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/sys/cdefs.h
+4382 6042147 1787322261795298143 d4431291754623c631419d3f5471b858 0 /Users/kevin/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/android/versioning.h
+8050 6042139 1787322261793534398 9211b9e699bd299321204d89c7a9a8db 0 /Users/kevin/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/android/api-level.h
+710 6042129 1787322261791768028 74d9864991333add03f231d882a36543 0 /Users/kevin/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/android/ndk-version.h
+5053 5404297 1778277693000000000 65368a9f4cf365969d64bd6a0f1410e6 1 include/stddef.h
+417 5404091 1778277693000000000 d2edf43390585163b0f70c6bd1d7e3b7 1 include/__stddef_header_macro.h
+717 5404096 1778277693000000000 81288588f2bdd7ac4f213fa113429ef2 1 include/__stddef_ptrdiff_t.h
+708 5404098 1778277693000000000 39fb92c68f9106377b154afee9e96194 1 include/__stddef_size_t.h
+853 5404100 1778277693000000000 754796f5faa70049051526dc04a0d36b 1 include/__stddef_wchar_t.h
+875 5404093 1778277693000000000 f8a94bfcc5c5499d269a5391c5933024 1 include/__stddef_null.h
+857 5404092 1778277693000000000 02545cb6a8f1dcd75cccde1b4f4910c6 1 include/__stddef_max_align_t.h
+708 5404095 1778277693000000000 04b70454bf7cdd0c492cfaf134f95be7 1 include/__stddef_offsetof.h
+12908 20544887 1787893108824539090 c1810667b81f6e90fbcf34ac99f00d67 0 /Users/kevin/code/mob/android/jni/mob_beam.h

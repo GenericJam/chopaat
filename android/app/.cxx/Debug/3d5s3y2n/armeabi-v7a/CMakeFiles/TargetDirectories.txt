@@ -1,0 +1,2 @@
+/Users/kevin/code/chopaat/android/app/.cxx/Debug/3d5s3y2n/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/kevin/code/chopaat/android/app/.cxx/Debug/3d5s3y2n/armeabi-v7a/CMakeFiles/rebuild_cache.dir

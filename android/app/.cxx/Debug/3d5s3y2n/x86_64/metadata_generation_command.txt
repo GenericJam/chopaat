@@ -1,0 +1,21 @@
+                        -H/Users/kevin/code/chopaat/android/app/src/main/jni
+-DCMAKE_SYSTEM_NAME=Android
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DCMAKE_SYSTEM_VERSION=28
+-DANDROID_PLATFORM=android-28
+-DANDROID_ABI=x86_64
+-DCMAKE_ANDROID_ARCH_ABI=x86_64
+-DANDROID_NDK=/Users/kevin/Library/Android/sdk/ndk/27.2.12479018
+-DCMAKE_ANDROID_NDK=/Users/kevin/Library/Android/sdk/ndk/27.2.12479018
+-DCMAKE_TOOLCHAIN_FILE=/Users/kevin/Library/Android/sdk/ndk/27.2.12479018/build/cmake/android.toolchain.cmake
+-DCMAKE_MAKE_PROGRAM=/Users/kevin/Library/Android/sdk/cmake/3.22.1/bin/ninja
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/Users/kevin/code/chopaat/android/app/build/intermediates/cxx/Debug/3d5s3y2n/obj/x86_64
+-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/Users/kevin/code/chopaat/android/app/build/intermediates/cxx/Debug/3d5s3y2n/obj/x86_64
+-DCMAKE_BUILD_TYPE=Debug
+-B/Users/kevin/code/chopaat/android/app/.cxx/Debug/3d5s3y2n/x86_64
+-GNinja
+-DANDROID_STL=c++_static
+-DERTS_VSN=erts-17.0
+-DMOB_DIR=/Users/kevin/code/mob
+                        Build command args: []
+                        Version: 2
