@@ -139,3 +139,23 @@ Same rules as the rest of the ecosystem, learned the hard way:
   Keep a Changelog, entry in the bump commit; and if it's ever packaged,
   the packed-artifact lesson applies — compile-time resources ship inside
   the package, verified by fetching and compiling the published artifact.
+
+## Beads on a fresh clone
+
+The tracker's Dolt database (`.beads/embeddeddolt/`) is gitignored by bd's
+own design, so a clone arrives with no issues in it. What travels through git
+is `.beads/issues.jsonl`, kept current by `export.auto` in
+`.beads/config.yaml`.
+
+To rebuild the tracker after cloning:
+
+```bash
+bd init --reinit-local --prefix chopaat
+bd import .beads/issues.jsonl
+bd list
+```
+
+`--reinit-local` is required: plain `bd init` aborts because `.beads/` already
+exists in the clone. Do not commit `.beads/embeddeddolt/` or
+`.beads-credential-key` — the first is a 4 MB binary working set that will
+conflict on every merge, the second is a federation auth key.
